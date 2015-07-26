@@ -18,8 +18,6 @@ class OutObserver(OutputObserver):
 class BObserver(BlockObserver):
   def on_block(self, block):
     # Here you have a block
-    
-
 
 # The node generator is a generator that provides the required block numbers
 nodes_generator = [10, 11, 12]
