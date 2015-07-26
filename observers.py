@@ -9,9 +9,9 @@ class TransactionObserver(object):
         raise NotImplementedError
 
 class InputObserver(object):
-    def on_input(self, transaction):
+    def on_input(self, input):
         raise NotImplementedError
 
 class OutputObserver(object):
-    def on_output(self, transaction):
+    def on_output(self, output):
         raise NotImplementedError
