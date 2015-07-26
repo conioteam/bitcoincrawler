@@ -7,11 +7,11 @@ E.g.
 ```
 class TXObserver(TransactionObserver):
   def on_transaction(self, tx):
-    # Do something nice with that transaction
+    # Here you have a transaction
 
 class InObserver(InputObserver):
   def on_input(self, input):
-    # Here you have a transaction
+    # Here you have an input
 
 class OutObserver(OutputObserver):
   def on_output(self, output):
