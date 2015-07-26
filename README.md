@@ -1,6 +1,5 @@
 # bitcoincrawler
 Completely customizable Bitcoin block parser.
-
 It is based on the Observer pattern.
 
 E.g.
