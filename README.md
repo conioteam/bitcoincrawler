@@ -3,6 +3,8 @@ Completely customizable Bitcoin block parser.
 It is based on the Observer pattern.
 
 E.g.
+
+```
 class TXObserver(TransactionObserver):
   def on_transaction(self, tx):
     # Do something nice with that transaction
@@ -32,3 +34,4 @@ bitcoin_scanner.mempool_inputsobservers.append(InObserver())
 bitcoin_scanner.mempool_outputsobservers.append(OutObserver())
 
 bitcoin_scanner.scan()
+```
