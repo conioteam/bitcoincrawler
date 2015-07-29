@@ -46,11 +46,11 @@ class TestBitcoindBackend(TestCase):
         self.assertEqual('1c659ee59c4d4ef6147b064dcfc6600cadcedb8cfa9f14a7c265f54ec6b67740', hash_last)
 
     def test_get_block(self):
-        block = self.sut.get_block(block_num=10)
+        block = self.sut._get_block(block_num=10)
         self.assertEquals('48310552612a11861a895639a1f58549b288739a2a8b0bc4a33ccfb35d2ef25d',
                           block['hash'])
 
-        block = self.sut.get_block(block_hash='48310552612a11861a895639a1f58549b288739a2a8b0bc4a33ccfb35d2ef25d')
+        block = self.sut._get_block(block_hash='48310552612a11861a895639a1f58549b288739a2a8b0bc4a33ccfb35d2ef25d')
         self.assertEquals('48310552612a11861a895639a1f58549b288739a2a8b0bc4a33ccfb35d2ef25d',
                           block['hash'])
 

@@ -5,7 +5,7 @@ class BTCDBlock(Block):
     def __init__(self, json_obj, node_backend):
         self.json_obj = json_obj
         self.node_backend = node_backend
-        self.genesis_block_tx = '4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b'
+        self.blacklist_txs = ['4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b']
 
     @property
     def hash(self):
@@ -33,8 +33,8 @@ class BTCDBlock(Block):
 
     @property
     def tx(self):
-        return (BTCDTransaction(self.node_backend.get_transaction(tx)) for tx in self.json_obj.get('tx') if \
-                tx != self.genesis_block_tx)
+        return (self.node_backend.get_transaction(tx) for tx in self.json_obj.get('tx')
+                if tx not in self.blacklist_txs)
 
     @property
     def time(self):
@@ -72,8 +72,14 @@ class BTCDBlock(Block):
         return self.json_obj.get('nextblockhash')
 
 class BTCDTransaction(Transaction):
-    def __init__(self, json_obj):
+    def __init__(self, json_obj, meta=None):
+        """
+        Thinking about a standard transaction, did you ever felt a lack of data?
+        Be strict.
+        """
+        meta = meta if meta else dict()
         self.json_obj = json_obj
+        self.__in_block = meta.get('in_block')
 
     @property
     def txid(self):
@@ -90,19 +96,15 @@ class BTCDTransaction(Transaction):
     @property
     def vin(self):
         print(self.json_obj)
-        return (BTCDVout(vout) for vout in self.json_obj.get('vin'))
+        return (BTCDVout(vin) for vin in self.json_obj.get('vin'))
 
     @property
     def vout(self):
         return (BTCDVout(vout) for vout in self.json_obj.get('vout'))
 
     @property
-    def txid(self):
-        return self.json_obj.get('txid')
-
-    @property
-    def txid(self):
-        return self.json_obj.get('txid')
+    def in_block(self):
+        return self.json_obj.get('in_block')
 
 class BTCDVin(Vin):
     def __init__(self, json_obj):

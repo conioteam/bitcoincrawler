@@ -1,7 +1,8 @@
 __author__ = 'mirko'
+import asyncio
 
-class BitcoinScanner(object):
-    def __init__(self, blocks_generator, node_backend):
+class BitcoinScanner:
+    def __init__(self, blocks_generator, node_backend, asyncio, async=True):
         self.blocks_generator = blocks_generator
         self.node_backend = node_backend
         self.blocks_observers = []
@@ -11,6 +12,18 @@ class BitcoinScanner(object):
         self.outputs_observers = []
         self.mempool_inputs_observers = []
         self.mempool_outputs_observers = []
+        self.asyncio = asyncio
+        self.is_async = async
+
+    @asyncio.coroutine
+    def async_task(self, func, callback=None):
+        try:
+            f = asyncio.Future()
+            if callback:
+                f.add_done_callback(callback)
+            return f.set_result(lambda: func())
+        except Exception as e:
+            raise AsyncTaskException(e, 'async_task', func)
 
     def __notify_block(self, cur_block):
         for n in self.blocks_observers:
@@ -18,17 +31,26 @@ class BitcoinScanner(object):
 
     def __notify_transaction_blockchain_or_mempool(self, cur_tx, tx_observers, in_observers, out_observers):
         for n in tx_observers:
-            n.on_transaction(cur_tx)
+            if self.is_async:
+                self.asyncio.run_until_complete(self.async_task(lambda: n.on_transaction(cur_tx)))
+            else:
+                n.on_transaction(cur_tx)
 
         if len(in_observers) > 0:
             for vin in cur_tx.vin:
                 for i_n in in_observers:
-                    i_n.on_input(vin)
+                    if self.is_async:
+                        self.asyncio.run_until_complete(self.async_task(lambda: i_n.on_transaction(vin)))
+                    else:
+                        i_n.on_transaction(vin)
 
         if len(out_observers) > 0:
             for vout in cur_tx.vout:
                 for o_n in out_observers:
-                    o_n.on_output(vout)
+                    if self.is_async:
+                        self.asyncio.run_until_complete(self.async_task(lambda: o_n.on_output(vout)))
+                    else:
+                        o_n.on_output(vout)
 
     def notify_transaction(self, cur_tx):
         self.__notify_transaction_blockchain_or_mempool(
@@ -64,3 +86,15 @@ class BitcoinScanner(object):
         if notify_mempool_tx:
             for cur_transaction in self.node_backend.get_mempool_transactions():
                 self.notify_mempool_transaction(cur_transaction)
+
+class AsyncTaskException(Exception):
+    def __init__(self, msg, method, params):
+        Exception(self, msg)
+        self._method = method
+        self._params = params
+
+    def getMethod(self):
+        return self._method
+
+    def getParams(self):
+        return self._params
