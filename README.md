@@ -21,9 +21,10 @@ class BObserver(BlockObserver):
   def on_block(self, block):
     # Here you have a block
 
-# The node generator is a generator that provides the required block numbers
-nodes_generator = [10, 11, 12]
 node_backend = BitcoindBackend('rpcuser', 'rpcpassword', 'http://mybitcoindurl:port')
+# The node generator is a generator that provides the required block.
+# Here you get the first 50 blocks.
+nodes_generator = node_backend.generate_blocks(height=0, max_iterations=50)
 
 bitcoin_scanner = BitcoinScanner(nodes_generator, node_backend)
 bitcoin_scanner.transactions_observers.append(TXObserver())

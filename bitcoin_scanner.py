@@ -21,14 +21,14 @@ class BitcoinScanner(object):
             n.on_transaction(cur_tx)
 
         if len(in_observers) > 0:
-            for i in self.node_backend.get_inputs_from_transaction(cur_tx):
+            for vin in cur_tx.vin:
                 for i_n in in_observers:
-                    i_n.on_input(i)
+                    i_n.on_input(vin)
 
         if len(out_observers) > 0:
-            for o in self.node_backend.get_outputs_from_transaction(cur_tx):
+            for vout in cur_tx.vout:
                 for o_n in out_observers:
-                    o_n.on_output(o)
+                    o_n.on_output(vout)
 
     def notify_transaction(self, cur_tx):
         self.__notify_transaction_blockchain_or_mempool(
@@ -55,15 +55,11 @@ class BitcoinScanner(object):
         notify_block = len(self.blocks_observers) > 0 or notify_tx
 
         if notify_block:
-            for b in self.blocks_generator:
-                cur_block = self.node_backend.get_block(block_num=b)
-
+            for cur_block in self.blocks_generator:
                 self.__notify_block(cur_block)
-
                 if notify_tx:
-                    for cur_transaction in self.node_backend.get_transactions_from_block(cur_block):
-                        self.notify_transaction(cur_transaction)
-
+                    for tx in cur_block.tx:
+                        self.notify_transaction(tx)
 
         if notify_mempool_tx:
             for cur_transaction in self.node_backend.get_mempool_transactions():
