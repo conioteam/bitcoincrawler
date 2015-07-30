@@ -1,5 +1,13 @@
 from components.node_backend import NodeBackend
-from components.bitcoind.bitcoind_model import BTCDBlock, BTCDTransaction, BTCDVin, BTCDVout
+from components.bitcoind.bitcoind_model import BTCDBlock, BTCDTransaction, BTCDVin, BTCDVout, AsyncBTCDBlock
+import asyncio
+import json
+
+@asyncio.coroutine
+def chain(obj, *funcs):
+    for f in funcs:
+        obj = yield from f(obj)
+    return obj
 
 class BitcoindBackend(NodeBackend):
     def __init__(self, bitcoind_cli):
@@ -9,8 +17,12 @@ class BitcoindBackend(NodeBackend):
         """
         self.btcd = bitcoind_cli
 
+    @asyncio.coroutine
+    def async_task(self, f):
+        yield f()
+
     def get_mempool_transactions(self):
-        return (BTCDTransaction(self.btcd.get_transaction(tx)) for tx in self.btcd.get_raw_mempool())
+        return (BTCDTransaction(self.btcd.get_and_decode_transaction(tx)) for tx in self.btcd.get_raw_mempool())
 
     def get_vins_from_transaction(self, transaction_obj):
         return (BTCDVin(vin) for vin in transaction_obj.vin)
@@ -22,10 +34,16 @@ class BitcoindBackend(NodeBackend):
         meta = {'height': block_obj.height} # why not?
         return (BTCDTransaction(tx, meta=meta) for tx in block_obj.tx)
 
-    def get_transaction(self, txid):
-        return BTCDTransaction(self.btcd.get_transaction(txid))
+    def get_transaction(self, txid, async=False):
+        if async:
+            return chain(txid,
+                         lambda txid: self.btcd.get_and_decode_transaction(txid, async=async),
+                         asyncio.coroutine(lambda json_tx: BTCDTransaction(json_tx)))
+        else:
+            return BTCDTransaction(self.btcd.get_and_decode_transaction(txid))
 
-    def generate_blocks(self, hash=None, height=None, stop_hash=None, stop_height=None, max_iterations=None):
+    def generate_blocks(self, hash=None, height=None, stop_hash=None, stop_height=None, max_iterations=None,
+                        async=False):
         """
         A starting point is mandatory. Only one can be specified.
         Stop point is optional. Only one can be specified.
@@ -55,7 +73,12 @@ class BitcoindBackend(NodeBackend):
         i = 0
         hash = self.btcd.get_block_hash(height) if not hash else hash
         while True:
-            block = BTCDBlock(self.btcd.get_block(hash), self)
+            print('returning block')
+            if async:
+                block = AsyncBTCDBlock(self.btcd.get_block(hash), self)
+            else:
+                block = BTCDBlock(self.btcd.get_block(hash), self)
+            print('block returnered')
             if stop_check(i, block):
                 break
             yield block

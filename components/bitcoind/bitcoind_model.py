@@ -1,5 +1,6 @@
 __author__ = 'guido'
 from components.model import Block, Transaction, Vin, Vout
+import asyncio
 
 class BTCDBlock(Block):
     def __init__(self, json_obj, node_backend):
@@ -33,8 +34,7 @@ class BTCDBlock(Block):
 
     @property
     def tx(self):
-        return (self.node_backend.get_transaction(tx) for tx in self.json_obj.get('tx')
-                if tx not in self.blacklist_txs)
+        return (self.node_backend.get_transaction(tx) for tx in self.json_obj.get('tx'))
 
     @property
     def time(self):
@@ -71,6 +71,18 @@ class BTCDBlock(Block):
     def nextblockhash(self):
         return self.json_obj.get('nextblockhash')
 
+class AsyncBTCDBlock(BTCDBlock):
+    def __init__(self, json_obj, node_backend):
+        super(AsyncBTCDBlock, self).__init__(json_obj, node_backend)
+
+    @property
+    def tx(self):
+        loop = asyncio.get_event_loop()
+        tasks = (self.node_backend.get_transaction(tx, async=True)
+                 for tx in self.json_obj.get('tx'))
+        return loop.run_until_complete(asyncio.gather(*tasks))
+
+
 class BTCDTransaction(Transaction):
     def __init__(self, json_obj, meta=None):
         """
@@ -95,8 +107,7 @@ class BTCDTransaction(Transaction):
 
     @property
     def vin(self):
-        print(self.json_obj)
-        return (BTCDVout(vin) for vin in self.json_obj.get('vin'))
+        return (BTCDVin(vin) for vin in self.json_obj.get('vin'))
 
     @property
     def vout(self):

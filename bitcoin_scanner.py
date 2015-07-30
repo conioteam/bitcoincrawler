@@ -2,7 +2,7 @@ __author__ = 'mirko'
 import asyncio
 
 class BitcoinScanner:
-    def __init__(self, blocks_generator, node_backend, asyncio, async=True):
+    def __init__(self, blocks_generator, node_backend, asyncio=None):
         self.blocks_generator = blocks_generator
         self.node_backend = node_backend
         self.blocks_observers = []
@@ -13,17 +13,7 @@ class BitcoinScanner:
         self.mempool_inputs_observers = []
         self.mempool_outputs_observers = []
         self.asyncio = asyncio
-        self.is_async = async
 
-    @asyncio.coroutine
-    def async_task(self, func, callback=None):
-        try:
-            f = asyncio.Future()
-            if callback:
-                f.add_done_callback(callback)
-            return f.set_result(lambda: func())
-        except Exception as e:
-            raise AsyncTaskException(e, 'async_task', func)
 
     def __notify_block(self, cur_block):
         for n in self.blocks_observers:
@@ -31,24 +21,24 @@ class BitcoinScanner:
 
     def __notify_transaction_blockchain_or_mempool(self, cur_tx, tx_observers, in_observers, out_observers):
         for n in tx_observers:
-            if self.is_async:
-                self.asyncio.run_until_complete(self.async_task(lambda: n.on_transaction(cur_tx)))
+            if self.asyncio:
+                self.asyncio.run_until_complete(asyncio.coroutine(lambda: n.on_transaction(cur_tx))())
             else:
                 n.on_transaction(cur_tx)
 
         if len(in_observers) > 0:
             for vin in cur_tx.vin:
                 for i_n in in_observers:
-                    if self.is_async:
-                        self.asyncio.run_until_complete(self.async_task(lambda: i_n.on_transaction(vin)))
+                    if self.asyncio:
+                        self.asyncio.run_until_complete(asyncio.coroutine(lambda: i_n.on_input(vin))())
                     else:
-                        i_n.on_transaction(vin)
+                        i_n.on_input(vin)
 
         if len(out_observers) > 0:
             for vout in cur_tx.vout:
                 for o_n in out_observers:
-                    if self.is_async:
-                        self.asyncio.run_until_complete(self.async_task(lambda: o_n.on_output(vout)))
+                    if self.asyncio:
+                        self.asyncio.run_until_complete(asyncio.coroutine(lambda: o_n.on_output(vout))())
                     else:
                         o_n.on_output(vout)
 
