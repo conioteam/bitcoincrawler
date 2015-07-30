@@ -1,7 +1,6 @@
-from components.node_backend import NodeBackend
-from components.bitcoind.bitcoind_model import BTCDBlock, BTCDTransaction, BTCDVin, BTCDVout, AsyncBTCDBlock
+from bitcoincrawler.components.node_backend import NodeBackend
+from bitcoincrawler.components.bitcoind.bitcoind_model import BTCDBlock, BTCDTransaction, BTCDVin, BTCDVout, AsyncBTCDBlock
 import asyncio
-import json
 
 @asyncio.coroutine
 def chain(obj, *funcs):
@@ -23,16 +22,6 @@ class BitcoindBackend(NodeBackend):
 
     def get_mempool_transactions(self):
         return (BTCDTransaction(self.btcd.get_and_decode_transaction(tx)) for tx in self.btcd.get_raw_mempool())
-
-    def get_vins_from_transaction(self, transaction_obj):
-        return (BTCDVin(vin) for vin in transaction_obj.vin)
-
-    def get_vouts_from_transaction(self, transaction_obj):
-        return (BTCDVout(vout) for vout in transaction_obj.vout)
-
-    def get_transactions_from_block(self, block_obj):
-        meta = {'height': block_obj.height} # why not?
-        return (BTCDTransaction(tx, meta=meta) for tx in block_obj.tx)
 
     def get_transaction(self, txid, async=False):
         if async:
@@ -60,6 +49,8 @@ class BitcoindBackend(NodeBackend):
                              'stop_hash: {}, stop_height: {}, max_iterations: {}'.format(stop_hash,
                                                                                          stop_height,
                                                                                          max_iterations))
+
+        prev_hash = None
         if hash and height != None or (not hash and height == None):
             raise ValueError('specify only one (and at least) start condition',
                              'blocks_from',
@@ -69,9 +60,10 @@ class BitcoindBackend(NodeBackend):
         elif max_iterations:
             stop_check = lambda i, block: i>= max_iterations
         else:
-            stop_check = lambda i, block: block.hash == stop_hash
+            stop_check = lambda i, block: prev_hash and (prev_hash == stop_hash)
         i = 0
         hash = self.btcd.get_block_hash(height) if not hash else hash
+
         while True:
             print('returning block')
             if async:
@@ -82,5 +74,10 @@ class BitcoindBackend(NodeBackend):
             if stop_check(i, block):
                 break
             yield block
+            prev_hash = block.hash
             hash = block.nextblockhash
+
+            if not hash:
+                break
+
             i += 1

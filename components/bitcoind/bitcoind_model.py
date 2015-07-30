@@ -1,5 +1,5 @@
 __author__ = 'guido'
-from components.model import Block, Transaction, Vin, Vout
+from bitcoincrawler.components.model import Block, Transaction, Vin, Vout
 import asyncio
 
 class BTCDBlock(Block):

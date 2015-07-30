@@ -3,7 +3,7 @@ import base64
 import requests
 import json
 from decimal import Decimal
-from components.bitcoind.bitcoind_backend import chain
+from bitcoincrawler.components.bitcoind.bitcoind_backend import chain
 from asyncio import coroutine
 import aiohttp
 

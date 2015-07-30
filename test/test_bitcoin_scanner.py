@@ -16,18 +16,14 @@ class TestBitcoinScanner(TestCase):
             return blocks[block_num - 1]
 
         node_backend = Mock()
-        node_backend.get_block.side_effect = side_effect_get_block
+        node_backend.generate_blocks.side_effect = side_effect_get_block
 
-        sut = BitcoinScanner([1, 2, 3], node_backend)
+        sut = BitcoinScanner([block1, block2, block3], node_backend)
 
         block_observer = Mock()
 
         sut.blocks_observers.append(block_observer)
         sut.scan()
-
-        self.assertEqual(
-            [call(block_num=1), call(block_num=2), call(block_num=3)],
-            node_backend.get_block.call_args_list)
 
         self.assertEqual(
             [call(block1), call(block2), call(block3)],
@@ -42,17 +38,15 @@ class TestBitcoinScanner(TestCase):
         tx2 = Mock()
         tx3 = Mock()
 
-        node_backend.get_transactions_from_block.side_effect = lambda d: [tx1, tx2, tx3]
+        block = Mock()
+        block.tx = [tx1, tx2, tx3]
 
-        sut = BitcoinScanner([123], node_backend)
+        sut = BitcoinScanner([block], node_backend)
 
         tx_observer = Mock()
         sut.transactions_observers.append(tx_observer)
 
         sut.scan()
-
-        node_backend.get_transactions_from_block.assert_called_once_with(block)
-        node_backend.get_block.assert_called_once_with(block_num=123)
 
         self.assertEqual(
             [call(tx1), call(tx2), call(tx3)],
@@ -64,22 +58,22 @@ class TestBitcoinScanner(TestCase):
         block = Mock()
         node_backend.get_block.side_effect = lambda block_num: block
 
+        block = Mock()
         tx = Mock()
+        block.tx = [tx]
 
-        node_backend.get_transactions_from_block.side_effect = lambda d: [tx]
-
-        sut = BitcoinScanner([123], node_backend)
+        sut = BitcoinScanner([block], node_backend)
 
         in1 = Mock()
         in2 = Mock()
 
-        node_backend.get_inputs_from_transaction.side_effect = lambda d: [in1, in2]
+        tx.vin = [in1, in2]
 
         out1 = Mock()
         out2 = Mock()
         out3 = Mock()
 
-        node_backend.get_outputs_from_transaction.side_effect = lambda d: [out1, out2, out3]
+        tx.vout = [out1, out2, out3]
 
         in_observer = Mock()
         out_observer = Mock()
@@ -87,9 +81,6 @@ class TestBitcoinScanner(TestCase):
         sut.outputs_observers.append(out_observer)
 
         sut.scan()
-
-        node_backend.get_transactions_from_block.assert_called_once_with(block)
-        node_backend.get_block.assert_called_once_with(block_num=123)
 
         self.assertEqual(
             [call(in1), call(in2)],
@@ -105,7 +96,7 @@ class TestBitcoinScanner(TestCase):
     def test_inout_mempool_scanner(self):
         node_backend = Mock()
         block = Mock()
-        node_backend.get_block.side_effect = lambda block_num: block
+
 
         tx = Mock()
 
@@ -116,13 +107,13 @@ class TestBitcoinScanner(TestCase):
         in1 = Mock()
         in2 = Mock()
 
-        node_backend.get_inputs_from_transaction.side_effect = lambda d: [in1, in2]
+        tx.vin = [in1, in2]
 
         out1 = Mock()
         out2 = Mock()
         out3 = Mock()
 
-        node_backend.get_outputs_from_transaction.side_effect = lambda d: [out1, out2, out3]
+        tx.vout = [out1, out2, out3]
 
         in_observer = Mock()
         out_observer = Mock()
@@ -130,9 +121,6 @@ class TestBitcoinScanner(TestCase):
         sut.mempool_outputs_observers.append(out_observer)
 
         sut.scan()
-
-        node_backend.get_mempool_transactions.assert_called_once()
-        node_backend.get_block.assert_never_called()
 
         self.assertEqual(
             [call(in1), call(in2)],
