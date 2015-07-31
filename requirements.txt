@@ -1,5 +1,6 @@
 aiohttp==0.16.6
 chardet==2.3.0
+coverage==3.7.1
 distribute==0.7.3
 httpretty==0.8.10
 pip==1.5.6
