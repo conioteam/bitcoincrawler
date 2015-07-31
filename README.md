@@ -1,7 +1,9 @@
 # bitcoincrawler
 Completely customizable Bitcoin block parser, with asyncio support.
+
 It is based on the Observer pattern.
-Currently it scans 2.5 block/sec on single core Intel i5 2.4GHz
+
+Currently it scans 2.5 blocks/sec on single core Intel i5 2.4GHz
 
 E.g.
 
