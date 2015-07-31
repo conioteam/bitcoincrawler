@@ -1,6 +1,6 @@
 #! /bin/sh
 
-coverage run -m --include=. --source=. --omit=bitcoincrawler/test -m `ls -1 bitcoincrawler/test/test*.py|sed -e "s/\//./"|sed -e "s/\.py//"`
+coverage run --include=. --source=. --omit=bitcoincrawler/test/**,virtualenv/** `which nosetests`
 
 coverage report
 coverage html
