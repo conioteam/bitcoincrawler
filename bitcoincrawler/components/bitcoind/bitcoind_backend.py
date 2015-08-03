@@ -1,5 +1,5 @@
 from bitcoincrawler.components.node_backend import NodeBackend
-from bitcoincrawler.components.bitcoind.bitcoind_model import BTCDBlock, BTCDTransaction, BTCDVin, BTCDVout, AsyncBTCDBlock
+from bitcoincrawler.components.bitcoind.bitcoind_model import BTCDBlock, BTCDTransaction, AsyncBTCDBlock
 import asyncio
 
 @asyncio.coroutine
@@ -23,7 +23,7 @@ class BitcoindBackend(NodeBackend):
     def get_mempool_transactions(self):
         return (BTCDTransaction(self.btcd.get_and_decode_transaction(tx)) for tx in self.btcd.get_raw_mempool())
 
-    def get_transaction(self, txid, async=False):
+    def get_transaction(self, txid, async=False, limit=10):
         if async:
             return chain(txid,
                          lambda txid: self.btcd.get_and_decode_transaction(txid, async=async),

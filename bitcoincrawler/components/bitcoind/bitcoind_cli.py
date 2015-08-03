@@ -1,10 +1,12 @@
+import asyncio
+
 __author__ = "guido"
 import base64
 import requests
 import json
 from decimal import Decimal
 from bitcoincrawler.components.bitcoind.bitcoind_backend import chain
-from asyncio import coroutine
+from asyncio import coroutine, Semaphore
 import aiohttp
 
 class BitcoindException(Exception):
@@ -23,14 +25,36 @@ class BitcoinCli:
     """
     bitcoind v0.11
     """
-    def __init__(self, btcd_user, btcd_password, btcd_url):
+    def __init__(self, btcd_user, btcd_password, btcd_url, async_limit=10):
         self.btcd_url = btcd_url
+        self.async_lock = Semaphore(async_limit)
+        print('Costruito semaforo {}'.format(self.async_lock._value))
         btcd_authpair = bytes(btcd_user.encode("utf-8")) + b":" + bytes(btcd_password.encode("utf-8"))
         self.btcd_auth_header = b"Basic " + base64.b64encode(btcd_authpair)
         self.btcd_auth_header_async = "Basic " + base64.b64encode(btcd_authpair).decode('utf-8')
 
     def call(self, method, *params, async=False):
         return self.__call(method, True, *params, async=async)
+
+    @asyncio.coroutine
+    def __aiohttp_routine(self, payload, jsonResponse, method):
+        btcd_headers = {"content-type": "application/json", "Authorization": self.btcd_auth_header_async}
+        with(yield from self.async_lock):
+            print("***************{}".format(self.async_lock._value))
+            r = yield from aiohttp.request('POST', self.btcd_url,
+                                                   data=json.dumps(payload),
+                                                   headers=btcd_headers)
+            r = yield from r.text()
+
+            if jsonResponse:
+                r = json.loads(r, parse_float=Decimal)
+            else:
+                return r
+
+            if r["error"]:
+                raise ValueError(r["error"], "__call", str({"method": method,
+                                                "jsonResponse": jsonResponse}))
+            return r["result"]
 
     def __call(self, method, jsonResponse, *params, async=False):
         def parse_res(r):
@@ -52,14 +76,11 @@ class BitcoinCli:
             "id": 0,
         }
         if async:
-            btcd_headers = {"content-type": "application/json", "Authorization": self.btcd_auth_header_async}
             print('preparing aiohttp chain')
-            return chain(None,
-                         lambda x: aiohttp.request('POST', self.btcd_url,
-                                                   data=json.dumps(payload),
-                                                   headers=btcd_headers),
-                         lambda r: r.text(),
-                         coroutine(lambda r: parse_res(r)))
+            btcd_headers = {"content-type": "application/json", "Authorization": self.btcd_auth_header_async}
+
+            return self.__aiohttp_routine(payload, jsonResponse, method)
+
         else:
             btcd_headers = {"content-type": "application/json", "Authorization": self.btcd_auth_header}
             res = requests.post(self.btcd_url,
