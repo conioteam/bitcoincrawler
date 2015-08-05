@@ -29,7 +29,8 @@ class VOUTDecoder:
                       req_sigs=None,
                       script_type=None,
                       addresses=None):
-        return {'value': '{0:.8f}'.format(Decimal(value) / Decimal(100000000)),
+        v = ('{0:.8f}'.format(Decimal(value) / Decimal(100000000))) if value else value
+        return {'value': v,
                 'n': n,
                 'scriptPubKey': {'asm': asm,
                                  'hex': hex_script,
@@ -87,10 +88,10 @@ class VOUTDecoder:
             decoder = VOUTDecoder._decode_HASH160
         elif script[0] == 106:
             decoder = VOUTDecoder._decode_OPRETURN
-        elif script[0] in list(range(1, 21)):
+        elif script[0] in range(1, 21):
             decoder = VOUTDecoder._decode_OP_INT
         else:
-            raise ValueError('Unknown script')
+            raise ValueError('Unknown script') # TODO
 
         return decoder({'d': vout,
                         'n': n,

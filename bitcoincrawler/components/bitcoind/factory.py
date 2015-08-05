@@ -1,12 +1,9 @@
-from bitcoincrawler.components.base_factory import BaseFactory
-from bitcoincrawler.components.bitcoind.bitcoind_model import BTCDBlock, BTCDTransaction
 import asyncio
 
-@asyncio.coroutine
-def chain(obj, *funcs):
-    for f in funcs:
-        obj = yield from f(obj)
-    return obj
+from bitcoincrawler.components.base_factory import BaseFactory
+from bitcoincrawler.components.bitcoind.model import BTCDBlock, BTCDTransaction
+from bitcoincrawler.components.tools import chain
+
 
 class BitcoindFactory(BaseFactory):
     def __init__(self, bitcoind_cli, async=False):
@@ -17,8 +14,8 @@ class BitcoindFactory(BaseFactory):
         self.btcd = bitcoind_cli
         self.async = async
 
-    def get_mempool_transactions(self):
-        return (BTCDTransaction(self.btcd.get_and_decode_transaction(tx)) for tx in self.btcd.get_raw_mempool())
+    def get_mempool_transactions(self, limit=None):
+        return self.get_transactions((self.btcd.get_raw_mempool()[:limit]) if limit else self.btcd.get_raw_mempool())
 
     def _get_transaction(self, txid):
         if self.async:
@@ -45,7 +42,7 @@ class BitcoindFactory(BaseFactory):
         :param stop_hash: stop point (block hash)
         :param stop_height: stop point (block height)
         :param max_iterations: stop point (see this as "how many blocks I want to generate?")
-        :param reserved to the adapter, if used
+        :param txs_factory: atm reserved to the adapter, if used # FIXME - review
         :return: BTCDBlock objects generator
         """
         if ((stop_height and stop_hash) or (stop_height and max_iterations) or (stop_hash and max_iterations)):

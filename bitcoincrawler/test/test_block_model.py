@@ -1,7 +1,7 @@
 from unittest import TestCase
 from unittest.mock import Mock
 import asyncio as asyncio
-from bitcoincrawler.components.bitcoind.bitcoind_model import BTCDBlock, AsyncBTCDBlock
+from bitcoincrawler.components.bitcoind.model import BTCDBlock, AsyncBTCDBlock
 
 __author__ = 'mirko'
 

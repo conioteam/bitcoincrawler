@@ -1,3 +1,5 @@
+# TODO - Review
+
 SCRIPTS = {0: "OP_0",
            1: "OP_1",
            2: "OP_2",
@@ -132,5 +134,3 @@ SCRIPTS = {0: "OP_0",
            183: "OP_NOP8",
            184: "OP_NOP9",
            185: "OP_NOP10"}
-
-LSCRIPTS = {y:x for x, y in SCRIPTS.items()}

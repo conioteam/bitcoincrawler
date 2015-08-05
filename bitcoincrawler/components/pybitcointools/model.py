@@ -1,6 +1,6 @@
 from bitcoincrawler.components.model import Transaction, Vin, Vout
 from bitcoin import deserialize
-from bitcoincrawler.components.pybitcointools.pybitcointools_decoders import VOUTDecoder, VINDecoder
+from bitcoincrawler.components.pybitcointools.decoders import VOUTDecoder, VINDecoder
 try:
     from bitcoin.py2specials import bin_to_b58check
 except:
@@ -54,17 +54,17 @@ class PyBitcoinToolsVin(Vin):
         self.json_obj = None
         self._vin = vin
 
-    def _decode(self):
+    def _deserialize(self):
         if not self.json:
             self.json = VINDecoder.decode(self._vin)
 
     @property
     def scriptSig(self):
-        self._decode()
+        self._deserialize()
         class ScriptSig:
             def __init__(self, up):
                 self.up = up
-                self.up._decode()
+                self.up._deserialize()
 
             @property
             def hex(self):
@@ -100,7 +100,7 @@ class PyBitcoinToolsVout(Vout):
         self._vout = vout
         self._n = n
 
-    def _decode(self):
+    def _deserialize(self):
         if not self.json:
             self.json = VOUTDecoder.decode(self._vout, self._n)
 
@@ -114,11 +114,11 @@ class PyBitcoinToolsVout(Vout):
 
     @property
     def scriptPubKey(self):
-        self._decode()
+        self._deserialize()
         class ScriptPubKey:
             def __init__(self, up):
                 self.up = up
-                self.up._decode()
+                self.up._deserialize()
 
             @property
             def asm(self):

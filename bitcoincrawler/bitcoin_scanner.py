@@ -53,7 +53,7 @@ class BitcoinScanner:
             cur_tx, self.mempool_transactions_observers,
             self.mempool_inputs_observers, self.mempool_outputs_observers
         )
-    def scan(self):
+    def scan(self, mempool_limit=None):
         notify_tx = \
             len(self.transactions_observers) > 0 \
             or len(self.inputs_observers) > 0 \
@@ -74,7 +74,7 @@ class BitcoinScanner:
                         self.notify_transaction(tx)
 
         if notify_mempool_tx:
-            for cur_transaction in self.node_backend.get_mempool_transactions():
+            for cur_transaction in self.node_backend.get_mempool_transactions(limit=mempool_limit):
                 self.notify_mempool_transaction(cur_transaction)
 
 class AsyncTaskException(Exception):

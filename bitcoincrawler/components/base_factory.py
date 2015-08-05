@@ -25,8 +25,8 @@ class AdapterFactory(BaseFactory):
     def _get_transaction(self, txid):
         return self.t._get_transaction(self, txid)
 
-    def get_mempool_transactions(self):
-        return self.t.get_mempool_transactions()
+    def get_mempool_transactions(self, limit=None):
+        return self.t.get_mempool_transactions(limit=limit)
 
     def get_transactions(self, txs):
         return self.t.get_transactions(txs)

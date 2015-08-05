@@ -6,7 +6,7 @@ import requests
 import json
 from decimal import Decimal
 
-from bitcoincrawler.components.bitcoind.bitcoind_factory import chain
+from bitcoincrawler.components.tools import chain
 from asyncio import Semaphore
 import aiohttp
 
@@ -41,7 +41,7 @@ class BitcoinCli:
     def __aiohttp_routine(self, payload, jsonResponse, method):
         btcd_headers = {"content-type": "application/json", "Authorization": self.btcd_auth_header_async}
         with(yield from self.async_lock):
-            print("***************{}".format(self.async_lock._value))
+            #print("***************{}".format(self.async_lock._value))
             r = yield from aiohttp.request('POST', self.btcd_url,
                                                    data=json.dumps(payload),
                                                    headers=btcd_headers)
