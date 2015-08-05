@@ -5,8 +5,9 @@ import base64
 import requests
 import json
 from decimal import Decimal
-from bitcoincrawler.components.bitcoind.bitcoind_backend import chain
-from asyncio import coroutine, Semaphore
+
+from bitcoincrawler.components.bitcoind.bitcoind_factory import chain
+from asyncio import Semaphore
 import aiohttp
 
 class BitcoindException(Exception):
@@ -77,8 +78,6 @@ class BitcoinCli:
         }
         if async:
             print('preparing aiohttp chain')
-            btcd_headers = {"content-type": "application/json", "Authorization": self.btcd_auth_header_async}
-
             return self.__aiohttp_routine(payload, jsonResponse, method)
 
         else:
@@ -88,9 +87,13 @@ class BitcoinCli:
                                 headers=btcd_headers).text
             return parse_res(res)
     
-    def get_raw_transaction(self, txid):
+    def get_raw_transaction(self, txid, async=False):
         try:
-            return self.call("getrawtransaction", txid)
+            if async:
+                return chain(txid,
+                             lambda txid: self.call("getrawtransaction", txid, async=async))
+            else:
+                return self.call("getrawtransaction", txid)
         except Exception as e:
             raise BitcoindException(e, "getrawtransaction", txid)
 

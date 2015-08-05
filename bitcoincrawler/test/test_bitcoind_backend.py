@@ -1,6 +1,6 @@
 from unittest import TestCase
 from unittest.mock import Mock
-from bitcoincrawler.components.bitcoind.bitcoind_backend import BitcoindBackend
+from bitcoincrawler.components.bitcoind.bitcoind_factory import BitcoindFactory
 
 
 __author__ = 'mirko'
@@ -36,7 +36,7 @@ class TestBitcoindBackend(TestCase):
         self.cli.get_raw_mempool.side_effect = self.fake_get_raw_mempool
         self.cli.get_and_decode_transaction.side_effect = self.fake_get_and_decode_transaction
 
-        self.sut = BitcoindBackend(self.cli)
+        self.sut = BitcoindFactory(self.cli)
 
     def tearDown(self):
         self.cli.reset_mock()

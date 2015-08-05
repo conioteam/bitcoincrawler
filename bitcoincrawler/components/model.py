@@ -1,5 +1,3 @@
-__author__ = 'guido'
-
 class Block:
     @property
     def hash(self):

@@ -3,10 +3,9 @@ from bitcoincrawler.components.model import Block, Transaction, Vin, Vout
 import asyncio
 
 class BTCDBlock(Block):
-    def __init__(self, json_obj, node_backend):
+    def __init__(self, json_obj, factory):
         self.json_obj = json_obj
-        self.node_backend = node_backend
-        self.blacklist_txs = ['4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b']
+        self.factory = factory
 
     @property
     def hash(self):
@@ -34,7 +33,7 @@ class BTCDBlock(Block):
 
     @property
     def tx(self):
-        return (self.node_backend.get_transaction(tx) for tx in self.json_obj.get('tx'))
+        return self.factory.get_transactions(self.json_obj.get('tx'))
 
     @property
     def time(self):
@@ -44,7 +43,7 @@ class BTCDBlock(Block):
     def coinbase(self):
         txs = self.json_obj.get('tx')
         if txs:
-            return self.node_backend.get_transaction(txs[0])
+            return next(self.factory.get_transactions([txs[0],]))
         return None
 
     @property
@@ -70,22 +69,6 @@ class BTCDBlock(Block):
     @property
     def nextblockhash(self):
         return self.json_obj.get('nextblockhash')
-
-class AsyncBTCDBlock(BTCDBlock):
-    def __init__(self, json_obj, node_backend):
-        super(AsyncBTCDBlock, self).__init__(json_obj, node_backend)
-
-    @property
-    def tx(self):
-        loop = asyncio.get_event_loop()
-        tasks = (self.node_backend.get_transaction(tx, async=True)
-                 for tx in self.json_obj.get('tx'))
-        return loop.run_until_complete(asyncio.gather(*tasks))
-
-    @property
-    def coinbase(self):
-        generator = super(AsyncBTCDBlock, self).coinbase
-        return asyncio.get_event_loop().run_until_complete(generator)
 
 class BTCDTransaction(Transaction):
     def __init__(self, json_obj, meta=None):
