@@ -22,23 +22,28 @@ class Block:
         raise NotImplementedError()
 
 class Transaction:
-    def hash(self):
+    @property
+    def txid(self):
         raise NotImplementedError()
 
     @property
-    def size(self):
+    def version(self):
         raise NotImplementedError()
 
     @property
-    def status(self):
-        raise NotImplementedError
-
-    @property
-    def vins(self):
+    def locktime(self):
         raise NotImplementedError()
 
     @property
-    def vouts(self):
+    def vin(self):
+        raise NotImplementedError()
+
+    @property
+    def vout(self):
+        raise NotImplementedError()
+
+    @property
+    def in_block(self):
         raise NotImplementedError()
 
 class Vin:

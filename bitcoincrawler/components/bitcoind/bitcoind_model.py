@@ -88,14 +88,12 @@ class AsyncBTCDBlock(BTCDBlock):
         return asyncio.get_event_loop().run_until_complete(generator)
 
 class BTCDTransaction(Transaction):
-    def __init__(self, json_obj, meta=None):
+    def __init__(self, json_obj):
         """
         Thinking about a standard transaction, did you ever felt a lack of data?
         Be strict.
         """
-        meta = meta if meta else dict()
         self.json_obj = json_obj
-        self.__in_block = meta.get('in_block')
 
     @property
     def txid(self):

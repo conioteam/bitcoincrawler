@@ -16,10 +16,6 @@ class BitcoindBackend(NodeBackend):
         """
         self.btcd = bitcoind_cli
 
-    @asyncio.coroutine
-    def async_task(self, f):
-        yield f()
-
     def get_mempool_transactions(self):
         return (BTCDTransaction(self.btcd.get_and_decode_transaction(tx)) for tx in self.btcd.get_raw_mempool())
 

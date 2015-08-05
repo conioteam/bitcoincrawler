@@ -32,6 +32,7 @@ class BitcoinCli:
         btcd_authpair = bytes(btcd_user.encode("utf-8")) + b":" + bytes(btcd_password.encode("utf-8"))
         self.btcd_auth_header = b"Basic " + base64.b64encode(btcd_authpair)
         self.btcd_auth_header_async = "Basic " + base64.b64encode(btcd_authpair).decode('utf-8')
+        self.connector = aiohttp.TCPConnector(share_cookies=False, limit=10)
 
     def call(self, method, *params, async=False):
         return self.__call(method, True, *params, async=async)
@@ -43,7 +44,9 @@ class BitcoinCli:
             print("***************{}".format(self.async_lock._value))
             r = yield from aiohttp.request('POST', self.btcd_url,
                                                    data=json.dumps(payload),
-                                                   headers=btcd_headers)
+                                                   headers=btcd_headers,
+                                                   connector=self.connector)
+            r.release()
             r = yield from r.text()
 
             if jsonResponse:
