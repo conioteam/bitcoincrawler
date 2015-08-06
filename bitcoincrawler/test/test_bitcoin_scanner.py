@@ -2,8 +2,6 @@ from unittest import TestCase
 from unittest.mock import Mock, call
 from bitcoincrawler.bitcoin_scanner import BitcoinScanner
 
-__author__ = 'mirko'
-
 class TestBitcoinScanner(TestCase):
     def test_block_listener(self):
 

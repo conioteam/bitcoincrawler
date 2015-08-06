@@ -1,0 +1,31 @@
+{
+    "txid": "82008eb75adb63fde3d672c64a380b861488eba3e5bde412c69ae48fd2a45e74",
+    "version": 1,
+    "vin": [
+        {
+            "txid": "e897195e5c3027aac52cf854bd8da5468161142ea3b22dd1ff1b83cf739604d2",
+            "scriptSig": {
+                "hex": "483045022000d6f414998302e889641c8e4ea15a4766bbc28c493e02783396ac789278e2e7022100a9fa2dbe6d450786b61863e1d9c6811936e1fe1f3bc789937e9a37b21fdd9bf001",
+                "asm": "3045022000d6f414998302e889641c8e4ea15a4766bbc28c493e02783396ac789278e2e7022100a9fa2dbe6d450786b61863e1d9c6811936e1fe1f3bc789937e9a37b21fdd9bf001"
+            },
+            "sequence": 4294967295,
+            "vout": 0
+        }
+    ],
+    "locktime": 0,
+    "vout": [
+        {
+            "value": 50.0,
+            "scriptPubKey": {
+                "addresses": [
+                    "1KqDCcb4gf8wjsqZW1CDS49QqFpGiBdzXh"
+                ],
+                "type": "pubkeyhash",
+                "reqSigs": 1,
+                "hex": "76a914ce906a1dbedeeadd7080dcf13047c941640a769588ac",
+                "asm": "OP_DUP OP_HASH160 ce906a1dbedeeadd7080dcf13047c941640a7695 OP_EQUALVERIFY OP_CHECKSIG"
+            },
+            "n": 0
+        }
+    ]
+}

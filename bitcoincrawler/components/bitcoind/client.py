@@ -120,15 +120,6 @@ class BitcoinCli:
         except Exception as e:
             raise BitcoindException(e, "decoderawtransaction", txid)
 
-    def get_transaction(self, txid):
-        return self.call("gettransaction", txid)
-
-    def get_best_block_hash(self):
-        try:
-            return self.call("getbestblockhash")
-        except Exception as e:
-            raise BitcoindException(e, "getbestblockhash", "")
-
     def get_block(self, block_hash):
         try:
             return self.call("getblock", block_hash)

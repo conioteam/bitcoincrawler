@@ -65,11 +65,9 @@ class BitcoindFactory(BaseFactory):
             stop_check = lambda i, block: prev_hash and (prev_hash == stop_hash)
         i = 0
         hash = self.btcd.get_block_hash(height) if not hash else hash
-
+        print('producing blocks...')
         while True:
-            print('returning block')
             block = BTCDBlock(self.btcd.get_block(hash), self if not txs_factory else txs_factory)
-            print('block returnered')
             if stop_check(i, block):
                 break
             yield block

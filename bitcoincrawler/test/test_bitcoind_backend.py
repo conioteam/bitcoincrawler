@@ -2,9 +2,6 @@ from unittest import TestCase
 from unittest.mock import Mock
 from bitcoincrawler.components.bitcoind.factory import BitcoindFactory
 
-
-__author__ = 'mirko'
-
 class TestBitcoindBackend(TestCase):
     def fake_get_block(self, hash):
         height = int(hash.split('_')[1])

@@ -1,0 +1,26 @@
+{
+    "txid": "4e79cbdc80dac14a677aa403e88905dd5545cfea4e4d3226bfeb1eb5559ab19a",
+    "version": 1,
+    "vin": [
+        {
+            "coinbase": "0439f3001b0174",
+            "sequence": 4294967295
+        }
+    ],
+    "locktime": 0,
+    "vout": [
+        {
+            "value": 50.03,
+            "scriptPubKey": {
+                "addresses": [
+                    "19dseoEHUahv9P8tPh2bpKCWG22zAmZYaK"
+                ],
+                "type": "pubkey",
+                "reqSigs": 1,
+                "hex": "4104080fe3261dcb19dfbc9e82c7c832d6857a5efdc4e06591c76759cfc1ecefdde8b7ff3aa353c40bfaf7884fca96adf65c1f56dcdbab58d85b058d5b215f2d94bbac",
+                "asm": "04080fe3261dcb19dfbc9e82c7c832d6857a5efdc4e06591c76759cfc1ecefdde8b7ff3aa353c40bfaf7884fca96adf65c1f56dcdbab58d85b058d5b215f2d94bb OP_CHECKSIG"
+            },
+            "n": 0
+        }
+    ]
+}
