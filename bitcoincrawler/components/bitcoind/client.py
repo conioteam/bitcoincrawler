@@ -16,12 +16,12 @@ class BitcoinCli:
     """
     bitcoind v0.11
     """
-    def __init__(self, btcd_user, btcd_password, btcd_url, async_limit=10):
+    def __init__(self, btcd_user, btcd_password, btcd_url, async=False, async_limit=10):
         self.btcd_url = btcd_url
         btcd_authpair = bytes(btcd_user.encode("utf-8")) + b":" + bytes(btcd_password.encode("utf-8"))
         self.btcd_auth_header = b"Basic " + base64.b64encode(btcd_authpair)
         self.btcd_auth_header_async = "Basic " + base64.b64encode(btcd_authpair).decode('utf-8')
-        if async_limit:
+        if async and async_limit:
             self.async_lock = asyncio.Semaphore(async_limit)
 
     def call(self, method, *params, async=False, jsonResponse=True):

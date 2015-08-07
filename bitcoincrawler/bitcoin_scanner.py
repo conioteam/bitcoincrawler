@@ -2,7 +2,7 @@ __author__ = 'mirko'
 import asyncio
 
 class BitcoinScanner:
-    def __init__(self, blocks_generator, node_backend, asyncio=None):
+    def __init__(self, blocks_generator, node_backend, async=False):
         self.blocks_generator = blocks_generator
         self.node_backend = node_backend
         self.blocks_observers = []
@@ -12,8 +12,8 @@ class BitcoinScanner:
         self.outputs_observers = []
         self.mempool_inputs_observers = []
         self.mempool_outputs_observers = []
-        self.asyncio = asyncio
-
+        if async:
+            self.loop = asyncio.get_event_loop()
 
     def __notify_block(self, cur_block):
         for n in self.blocks_observers:
@@ -21,24 +21,24 @@ class BitcoinScanner:
 
     def __notify_transaction_blockchain_or_mempool(self, cur_tx, tx_observers, in_observers, out_observers):
         for n in tx_observers:
-            if self.asyncio:
-                self.asyncio.run_until_complete(asyncio.coroutine(lambda: n.on_transaction(cur_tx))())
+            if self.loop:
+                self.loop.run_until_complete(asyncio.coroutine(lambda: n.on_transaction(cur_tx))())
             else:
                 n.on_transaction(cur_tx)
 
         if len(in_observers) > 0:
             for vin in cur_tx.vin:
                 for i_n in in_observers:
-                    if self.asyncio:
-                        self.asyncio.run_until_complete(asyncio.coroutine(lambda: i_n.on_input(vin))())
+                    if self.loop:
+                        self.loop.run_until_complete(asyncio.coroutine(lambda: i_n.on_input(vin))())
                     else:
                         i_n.on_input(vin)
 
         if len(out_observers) > 0:
             for vout in cur_tx.vout:
                 for o_n in out_observers:
-                    if self.asyncio:
-                        self.asyncio.run_until_complete(asyncio.coroutine(lambda: o_n.on_output(vout))())
+                    if self.loop:
+                        self.loop.run_until_complete(asyncio.coroutine(lambda: o_n.on_output(vout))())
                     else:
                         o_n.on_output(vout)
 
