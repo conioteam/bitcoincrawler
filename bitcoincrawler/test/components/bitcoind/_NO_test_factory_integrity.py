@@ -1,5 +1,4 @@
 from unittest import TestCase
-from unittest.mock import Mock
 from bitcoincrawler.components.bitcoind import factory
 from bitcoincrawler.test.mocks.components.bitcoind.client import bitcoinCli
 from bitcoincrawler.components.bitcoind.model import BTCDTransaction, BTCDBlock, BTCDVin, BTCDVout

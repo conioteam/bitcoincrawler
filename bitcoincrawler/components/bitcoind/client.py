@@ -9,18 +9,27 @@ from decimal import Decimal
 from bitcoincrawler.components.tools import chain
 from asyncio import Semaphore
 import aiohttp
+from requests.exceptions import ConnectionError
 
 class BitcoindException(Exception):
     def __init__(self, msg, method, params):
         Exception(self, msg)
         self._method = method
         self._params = params
+        self._msg = msg
 
-    def getMethod(self):
+    @property
+    def method(self):
         return self._method
 
-    def getParams(self):
+    @property
+    def params(self):
         return self._params
+
+    @property
+    def msg(self):
+        return self._msg
+
 
 class BitcoinCli:
     """
@@ -28,48 +37,48 @@ class BitcoinCli:
     """
     def __init__(self, btcd_user, btcd_password, btcd_url, async_limit=10):
         self.btcd_url = btcd_url
-        self.async_lock = Semaphore(async_limit)
-        print('Costruito semaforo {}'.format(self.async_lock._value))
         btcd_authpair = bytes(btcd_user.encode("utf-8")) + b":" + bytes(btcd_password.encode("utf-8"))
         self.btcd_auth_header = b"Basic " + base64.b64encode(btcd_authpair)
         self.btcd_auth_header_async = "Basic " + base64.b64encode(btcd_authpair).decode('utf-8')
+        if async_limit:
+            self.async_lock = Semaphore(async_limit)
+            print('Costruito semaforo {}'.format(self.async_lock._value))
 
-    def call(self, method, *params, async=False):
-        return self.__call(method, True, *params, async=async)
+    def call(self, method, *params, async=False, jsonResponse=True):
+        try:
+            return self.__call(method, *params, async=async, jsonResponse=jsonResponse)
+        except ConnectionError:
+            raise BitcoindException('', '', '')
+
+    def __parse_res(self, r, method, params, jsonResponse=True):
+        try:
+            if jsonResponse:
+                r = json.loads(r, parse_float=Decimal)
+                if isinstance(r, dict) and r.get('error'):
+                    raise BitcoindException(r["error"], "__call", str({"method": method,
+                                                                   "params": params}))
+                return r
+            else:
+                if '"error":' in r:
+                    raise BitcoindException(json.loads(r)["error"], "__call", str({"method": method,
+                                                                                   "params": params}))
+                return r
+
+        except ValueError as e:
+            raise BitcoindException(e, method, params)
 
     @asyncio.coroutine
-    def __aiohttp_routine(self, payload, jsonResponse, method):
+    def __aiohttp_routine(self, payload, jsonResponse=True):
         btcd_headers = {"content-type": "application/json", "Authorization": self.btcd_auth_header_async}
         with(yield from self.async_lock):
-            #print("***************{}".format(self.async_lock._value))
             r = yield from aiohttp.request('POST', self.btcd_url,
                                                    data=json.dumps(payload),
                                                    headers=btcd_headers)
             r = yield from r.text()
 
-            if jsonResponse:
-                r = json.loads(r, parse_float=Decimal)
-            else:
-                return r
+            return self.__parse_res(r, payload['method'], payload['params'], jsonResponse=jsonResponse)
 
-            if r["error"]:
-                raise ValueError(r["error"], "__call", str({"method": method,
-                                                "jsonResponse": jsonResponse}))
-            return r["result"]
-
-    def __call(self, method, jsonResponse, *params, async=False):
-        def parse_res(r):
-            print('parse_res: %s' % method)
-            if jsonResponse:
-                r = json.loads(r, parse_float=Decimal)
-            else:
-                return r
-
-            if r["error"]:
-                raise ValueError(r["error"], "__call", str({"method": method,
-                                                "jsonResponse": jsonResponse}))
-            return r["result"]
-
+    def __call(self, method, *params, async=False, jsonResponse=False):
         payload = {
             "method": method,
             "params": params,
@@ -77,31 +86,30 @@ class BitcoinCli:
             "id": 0,
         }
         if async:
-            print('preparing aiohttp chain')
-            return self.__aiohttp_routine(payload, jsonResponse, method)
+            return self.__aiohttp_routine(payload, jsonResponse=jsonResponse)
 
         else:
             btcd_headers = {"content-type": "application/json", "Authorization": self.btcd_auth_header}
             res = requests.post(self.btcd_url,
                                 data=json.dumps(payload),
                                 headers=btcd_headers).text
-            return parse_res(res)
+            return self.__parse_res(res, method, params, jsonResponse=jsonResponse)
     
-    def get_raw_transaction(self, txid, async=False):
+    def get_raw_transaction(self, txid, async=False, jsonResponse=False):
         try:
             if async:
                 return chain(txid,
-                             lambda txid: self.call("getrawtransaction", txid, async=async))
+                             lambda txid: self.call("getrawtransaction", txid, async=async, jsonResponse=jsonResponse))
             else:
-                return self.call("getrawtransaction", txid)
-        except Exception as e:
-            raise BitcoindException(e, "getrawtransaction", txid)
+                return self.call("getrawtransaction", txid, jsonResponse=jsonResponse)
+        except BitcoindException as btcde:
+            if btcde.msg.get('code') == -5:
+                return None
+            else:
+                raise btcde
 
     def decode_raw_transaction(self, raw_transaction):
-        try:
-            return self.call("decoderawtransaction", raw_transaction)
-        except Exception as e:
-            raise BitcoindException(e, "decoderawtransaction", raw_transaction)
+        return self.call("decoderawtransaction", raw_transaction)
 
     def get_and_decode_transaction(self, txid, async=False):
         """
@@ -110,30 +118,24 @@ class BitcoinCli:
         :param txid:
         :return:
         """
-        try:
-            if async:
-                return chain(txid,
-                             lambda txid: self.call("getrawtransaction", txid, async=async),
-                             lambda rawtx: self.call("decoderawtransaction", rawtx, async=async))
-            else:
-                return self.call("decoderawtransaction", self.call("getrawtransaction", txid))
-        except Exception as e:
-            raise BitcoindException(e, "decoderawtransaction", txid)
+        if async:
+            return chain(txid,
+                         lambda txid: self.call("getrawtransaction", txid, async=async),
+                         lambda rawtx: self.call("decoderawtransaction", rawtx, async=async))
+        else:
+            return self.call("decoderawtransaction", self.call("getrawtransaction", txid))
 
     def get_block(self, block_hash):
-        try:
-            return self.call("getblock", block_hash)
-        except Exception as e:
-            raise BitcoindException(e, "getblock", block_hash)
-    
+        return self.call("getblock", block_hash)
+
     def get_block_hash(self, block_height):
-        try: 
-            return self.call("getblockhash", block_height)
-        except Exception as e:
-            raise BitcoindException(e, "getrawtransaction", block_height)
+        try:
+            return self.call("getblockhash", block_height, jsonResponse=False)
+        except BitcoindException as btcde:
+            if btcde.msg.get('code') == -5:
+                return None
+            else:
+                raise btcde
 
     def get_raw_mempool(self):
-        try:
-            return self.call("getrawmempool")
-        except Exception as e:
-            raise BitcoindException(e, "getrawtransaction", "")
+        return self.call("getrawmempool")
