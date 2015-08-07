@@ -1,7 +1,7 @@
 from unittest import TestCase
 from requests.exceptions import ConnectionError
 from bitcoincrawler.components.bitcoind.client import BitcoinCli
-from bitcoincrawler.components.bitcoind.exceptions.client import BitcoinCliException, TransactionNotFound
+from bitcoincrawler.components.bitcoind.exceptions.client import BitcoinCliException, TransactionNotFound, BlockNotFound
 import httpretty
 from httpretty import httprettified
 import json
@@ -86,14 +86,13 @@ class TestBitcoinCli(TestCase):
 
     @httprettified
     def test_get_raw_transaction(self):
-        response = 'cafebabe'
+        response = 'valid_rawtx'
         self.register_call(response)
-        r = self.sut.get_raw_transaction('cafe')
-        self.assertEqual(r, 'cafebabe')
+        r = self.sut.get_raw_transaction('valid_txid')
+        self.assertEqual(r, 'valid_rawtx')
         payload = json.loads(httpretty.last_request().body.decode('utf-8'))
         self.assertEqual(payload.get('method'), 'getrawtransaction')
-        self.assertEqual(payload.get('params')[0], 'cafe')
-
+        self.assertEqual(payload.get('params')[0], 'valid_txid')
 
     @httprettified
     def test_decode_raw_transaction_success(self):
@@ -187,7 +186,6 @@ class TestBitcoinCli(TestCase):
         self.assertEqual(payload.get('method'), 'getblock')
         self.assertEqual(payload.get('params')[0], '000000000000c5e7fb216de3593318708b3372afb511f3824c4a9f7300a39529')
 
-
     @httprettified
     def test_get_block_invalid_hash(self):
         response = {'error':{"code":-5,"message":"Block not found"}}
@@ -212,8 +210,11 @@ class TestBitcoinCli(TestCase):
     def test_get_block_hash_invalid_height(self):
         response = {'error':{"code":-5,"message":"Block not found"}}
         self.register_call(response)
-        r = self.sut.get_block_hash(999999999)
-        self.assertIsNone(r)
+        with self.assertRaises(BlockNotFound) as assertion:
+            self.sut.get_block_hash(999999999)
+        exception = assertion.exception
+        self.assertEqual(exception.params, 999999999)
+        self.assertEqual(exception.method, 'getblockhash')
         payload = json.loads(httpretty.last_request().body.decode('utf-8'))
         self.assertEqual(payload.get('method'), 'getblockhash')
         self.assertEqual(payload.get('params')[0], 999999999)

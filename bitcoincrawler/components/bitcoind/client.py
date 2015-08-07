@@ -1,17 +1,16 @@
-import asyncio
+from bitcoincrawler.components.bitcoind.exceptions.client import BitcoinCliException, TransactionNotFound, \
+    BlockNotFound
 
-from bitcoincrawler.components.bitcoind.exceptions.client import BitcoinCliException, TransactionNotFound
-
-__author__ = "guido"
 import base64
+import asyncio
 import requests
 import json
 from decimal import Decimal
 
 from bitcoincrawler.components.tools import chain
-from asyncio import Semaphore
 import aiohttp
 from requests.exceptions import ConnectionError
+
 
 class BitcoinCli:
     """
@@ -23,8 +22,7 @@ class BitcoinCli:
         self.btcd_auth_header = b"Basic " + base64.b64encode(btcd_authpair)
         self.btcd_auth_header_async = "Basic " + base64.b64encode(btcd_authpair).decode('utf-8')
         if async_limit:
-            self.async_lock = Semaphore(async_limit)
-            print('Costruito semaforo {}'.format(self.async_lock._value))
+            self.async_lock = asyncio.Semaphore(async_limit)
 
     def call(self, method, *params, async=False, jsonResponse=True):
         try:
@@ -115,7 +113,7 @@ class BitcoinCli:
             return self.call("getblockhash", block_height, jsonResponse=False)
         except BitcoinCliException as btcde:
             if btcde.msg.get('code') == -5:
-                return None
+                raise BlockNotFound(btcde.msg, 'getblockhash', block_height)
             else:
                 raise btcde
 

@@ -1,40 +1,16 @@
-__author__ = 'guido'
+from bitcoincrawler.components.exceptions import CrawlerException
 
 
-class BitcoinCliException(Exception):
+class BitcoinCliException(CrawlerException):
     def __init__(self, msg, method, params):
-        Exception(self, msg)
-        self.__method = method
-        self.__params = params
-        self.__msg = msg
+        super(BitcoinCliException, self).__init__(msg, method, params)
 
-    @property
-    def method(self):
-        return self.__method
 
-    @property
-    def params(self):
-        return self.__params
-
-    @property
-    def msg(self):
-        return self.__msg
-
-class TransactionNotFound(Exception):
+class TransactionNotFound(CrawlerException):
     def __init__(self, msg, method, params):
-        Exception(self, msg)
-        self.__method = method
-        self.__params = params
-        self.__msg = msg
+        super(TransactionNotFound, self).__init__(msg, method, params)
 
-    @property
-    def method(self):
-        return self.__method
 
-    @property
-    def params(self):
-        return self.__params
-
-    @property
-    def msg(self):
-        return self.__msg
+class BlockNotFound(CrawlerException):
+    def __init__(self, msg, method, params):
+        super(BlockNotFound, self).__init__(msg, method, params)
