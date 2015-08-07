@@ -7,14 +7,16 @@ from httpretty import httprettified
 import json
 from decimal import Decimal
 
+
 class TestBitcoinCliAsync(TestCase):
     def setUp(self):
-        self.sut = BitcoinCli('username', 'password', 'http://bitcoin_url/', async_limit=False)
+        self.sut = BitcoinCli('username', 'password', 'http://bitcoin_url/', async=False)
         self.async_auth_string = u'Basic dXNlcm5hbWU6cGFzc3dvcmQ='
 
     def test_auth_headers(self):
         self.assertEqual(self.sut.btcd_auth_header_async, self.async_auth_string)
-    
+
+
 class TestBitcoinCli(TestCase):
     def register_call(self, response):
         if isinstance(response, dict) or isinstance(response, list):
@@ -24,7 +26,7 @@ class TestBitcoinCli(TestCase):
                                       body=response)
     
     def setUp(self):
-        self.sut = BitcoinCli('username', 'password', 'http://bitcoin_url/', async_limit=False)
+        self.sut = BitcoinCli('username', 'password', 'http://bitcoin_url/', async=False)
         self.auth_string = b'Basic dXNlcm5hbWU6cGFzc3dvcmQ='
 
     def test_auth_headers(self):

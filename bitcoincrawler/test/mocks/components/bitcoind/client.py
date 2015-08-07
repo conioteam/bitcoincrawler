@@ -54,10 +54,10 @@ def get_and_decode_raw_transaction(txid, async=False):
     else:
         return decode_raw_transaction(get_raw_transaction(txid))
 
-bitcoinCli = Mock()
-bitcoinCli.get_raw_mempool.side_effect = get_raw_mempool
-bitcoinCli.get_raw_transaction.side_effect = get_raw_transaction
-bitcoinCli.decode_raw_transaction.side_effect = decode_raw_transaction
-bitcoinCli.get_block_hash.side_effect = get_block_hash
-bitcoinCli.get_block.side_effect = get_block
-bitcoinCli.get_and_decode_transaction.side_effect = get_and_decode_raw_transaction
+bitcoin_cli_mock = Mock()
+bitcoin_cli_mock.get_raw_mempool.side_effect = get_raw_mempool
+bitcoin_cli_mock.get_raw_transaction.side_effect = get_raw_transaction
+bitcoin_cli_mock.decode_raw_transaction.side_effect = decode_raw_transaction
+bitcoin_cli_mock.get_block_hash.side_effect = get_block_hash
+bitcoin_cli_mock.get_block.side_effect = get_block
+bitcoin_cli_mock.get_and_decode_transaction.side_effect = get_and_decode_raw_transaction

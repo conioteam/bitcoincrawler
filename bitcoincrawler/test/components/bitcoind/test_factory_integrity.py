@@ -1,17 +1,17 @@
 from unittest import TestCase
 from bitcoincrawler.components.bitcoind import factory
-from bitcoincrawler.test.mocks.components.bitcoind.client import bitcoinCli
+from bitcoincrawler.test.mocks.components.bitcoind.client import bitcoin_cli_mock
 from bitcoincrawler.components.bitcoind.model import BTCDTransaction, BTCDBlock, BTCDVin, BTCDVout
 from copy import deepcopy
 
 class TestBitcoinFactory(TestCase):
     def setUp(self):
-        self.btcd = deepcopy(bitcoinCli)
+        self.btcd = deepcopy(bitcoin_cli_mock)
         self.sut = factory.BitcoindFactory(self.btcd)
         self.async_sut = factory.BitcoindFactory(self.btcd, async=True)
 
     def tearDown(self):
-        self.btcd = deepcopy(bitcoinCli)
+        self.btcd = deepcopy(bitcoin_cli_mock)
 
     def test_get_mempool_transactions(self):
         transactions = [tx for tx in self.sut.get_mempool_transactions()]

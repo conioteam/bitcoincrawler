@@ -1,6 +1,5 @@
-__author__ = 'guido'
 from bitcoincrawler.components.model import Block, Transaction, Vin, Vout
-import asyncio
+
 
 class BTCDBlock(Block):
     def __init__(self, json_obj, factory):
@@ -70,6 +69,7 @@ class BTCDBlock(Block):
     def nextblockhash(self):
         return self.json_obj.get('nextblockhash')
 
+
 class BTCDTransaction(Transaction):
     def __init__(self, json_obj, meta=None):
         """
@@ -103,6 +103,7 @@ class BTCDTransaction(Transaction):
     @property
     def in_block(self):
         return self.json_obj.get('in_block')
+
 
 class BTCDVin(Vin):
     def __init__(self, json_obj):
