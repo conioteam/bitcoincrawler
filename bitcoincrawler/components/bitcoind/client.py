@@ -1,5 +1,7 @@
 import asyncio
 
+from bitcoincrawler.components.bitcoind.exceptions.client import BitcoinCliException, TransactionNotFound
+
 __author__ = "guido"
 import base64
 import requests
@@ -10,26 +12,6 @@ from bitcoincrawler.components.tools import chain
 from asyncio import Semaphore
 import aiohttp
 from requests.exceptions import ConnectionError
-
-class BitcoindException(Exception):
-    def __init__(self, msg, method, params):
-        Exception(self, msg)
-        self._method = method
-        self._params = params
-        self._msg = msg
-
-    @property
-    def method(self):
-        return self._method
-
-    @property
-    def params(self):
-        return self._params
-
-    @property
-    def msg(self):
-        return self._msg
-
 
 class BitcoinCli:
     """
@@ -48,24 +30,24 @@ class BitcoinCli:
         try:
             return self.__call(method, *params, async=async, jsonResponse=jsonResponse)
         except ConnectionError:
-            raise BitcoindException('', '', '')
+            raise BitcoinCliException('', '', '')
 
     def __parse_res(self, r, method, params, jsonResponse=True):
         try:
             if jsonResponse:
                 r = json.loads(r, parse_float=Decimal)
                 if isinstance(r, dict) and r.get('error'):
-                    raise BitcoindException(r["error"], "__call", str({"method": method,
+                    raise BitcoinCliException(r["error"], "__call", str({"method": method,
                                                                    "params": params}))
                 return r
             else:
                 if '"error":' in r:
-                    raise BitcoindException(json.loads(r)["error"], "__call", str({"method": method,
+                    raise BitcoinCliException(json.loads(r)["error"], "__call", str({"method": method,
                                                                                    "params": params}))
                 return r
 
         except ValueError as e:
-            raise BitcoindException(e, method, params)
+            raise BitcoinCliException(e, method, params)
 
     @asyncio.coroutine
     def __aiohttp_routine(self, payload, jsonResponse=True):
@@ -102,9 +84,9 @@ class BitcoinCli:
                              lambda txid: self.call("getrawtransaction", txid, async=async, jsonResponse=jsonResponse))
             else:
                 return self.call("getrawtransaction", txid, jsonResponse=jsonResponse)
-        except BitcoindException as btcde:
+        except BitcoinCliException as btcde:
             if btcde.msg.get('code') == -5:
-                return None
+                raise TransactionNotFound(btcde.msg, 'getrawtransaction', txid)
             else:
                 raise btcde
 
@@ -131,7 +113,7 @@ class BitcoinCli:
     def get_block_hash(self, block_height):
         try:
             return self.call("getblockhash", block_height, jsonResponse=False)
-        except BitcoindException as btcde:
+        except BitcoinCliException as btcde:
             if btcde.msg.get('code') == -5:
                 return None
             else:

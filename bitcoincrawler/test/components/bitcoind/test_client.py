@@ -1,7 +1,7 @@
 from unittest import TestCase
-from unittest.mock import Mock
 from requests.exceptions import ConnectionError
-from bitcoincrawler.components.bitcoind.client import BitcoinCli, BitcoindException
+from bitcoincrawler.components.bitcoind.client import BitcoinCli
+from bitcoincrawler.components.bitcoind.exceptions.client import BitcoinCliException, TransactionNotFound
 import httpretty
 from httpretty import httprettified
 import json
@@ -33,7 +33,7 @@ class TestBitcoinCli(TestCase):
     @httprettified
     def test_call_unexpected_response(self):
         self.register_call('Unexpected response')
-        with self.assertRaises(BitcoindException) as raised:
+        with self.assertRaises(BitcoinCliException) as raised:
             self.sut.call('method', 'param')
         e = raised.exception
         self.assertIsInstance(e.msg, ValueError)
@@ -43,7 +43,7 @@ class TestBitcoinCli(TestCase):
     @httprettified
     def test_call_response_has_error(self):
         self.register_call({'error': 'some error message'})
-        with self.assertRaises(BitcoindException):
+        with self.assertRaises(BitcoinCliException):
             self.sut.call('method', 'param')
 
     @httprettified
@@ -58,24 +58,27 @@ class TestBitcoinCli(TestCase):
         def response(r, u, h):
             raise ConnectionError('Connection aborted.', '', '')
         self.register_call(response)
-        with self.assertRaises(BitcoindException):
+        with self.assertRaises(BitcoinCliException):
             self.sut.call('method', 'param')
 
     @httprettified
     def test_get_raw_transaction_unknown_tx(self):
         response = {'error':{'message': 'No information available about transaction', 'code': -5}}
         self.register_call(response)
-        r = self.sut.get_raw_transaction('uknown_but_valid_txid')
-        self.assertIsNone(r)
+        with self.assertRaises(TransactionNotFound) as assertion:
+            self.sut.get_raw_transaction('unknown_but_valid_txid')
+        exception = assertion.exception
+        self.assertEqual(exception.params, 'unknown_but_valid_txid')
+        self.assertEqual(exception.method, 'getrawtransaction')
         payload = json.loads(httpretty.last_request().body.decode('utf-8'))
         self.assertEqual(payload.get('method'), 'getrawtransaction')
-        self.assertEqual(payload.get('params')[0], 'uknown_but_valid_txid')
+        self.assertEqual(payload.get('params')[0], 'unknown_but_valid_txid')
 
     @httprettified
     def test_get_raw_transaction_invalid_tx(self):
         response = {'error':{"code":-8, "message":"parameter 1 must be hexadecimal string (not 'invalid_txid')"}}
         self.register_call(response)
-        with self.assertRaises(BitcoindException):
+        with self.assertRaises(BitcoinCliException):
             self.sut.get_raw_transaction('invalid_txid')
         payload = json.loads(httpretty.last_request().body.decode('utf-8'))
         self.assertEqual(payload.get('method'), 'getrawtransaction')
@@ -150,7 +153,7 @@ class TestBitcoinCli(TestCase):
     def test_decode_raw_transaction_wrong_rawtx(self):
         response = {'error':{'message': 'TX Decode failed', 'code': -22}}
         self.register_call(response)
-        with self.assertRaises(BitcoindException):
+        with self.assertRaises(BitcoinCliException):
             self.sut.decode_raw_transaction('invalid_txhash')
         payload = json.loads(httpretty.last_request().body.decode('utf-8'))
         self.assertEqual(payload.get('method'), 'decoderawtransaction')
@@ -189,7 +192,7 @@ class TestBitcoinCli(TestCase):
     def test_get_block_invalid_hash(self):
         response = {'error':{"code":-5,"message":"Block not found"}}
         self.register_call(response)
-        with self.assertRaises(BitcoindException):
+        with self.assertRaises(BitcoinCliException):
             self.sut.get_block('invalid_block_hash')
         payload = json.loads(httpretty.last_request().body.decode('utf-8'))
         self.assertEqual(payload.get('method'), 'getblock')
