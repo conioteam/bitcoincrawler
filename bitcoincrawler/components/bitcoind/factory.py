@@ -20,10 +20,11 @@ class BitcoindFactory(BaseFactory):
     def _get_transaction(self, txid):
         if self.async:
             return chain(txid,
-                         lambda txid: self.btcd.get_and_decode_transaction(txid, async=True),
+                         lambda txid: self.btcd.get_raw_transaction(txid, async=True),
+                         lambda rawtx: self.btcd.decode_raw_transaction(rawtx, async=True),
                          asyncio.coroutine(lambda json_tx: BTCDTransaction(json_tx)))
         else:
-            return BTCDTransaction(self.btcd.get_and_decode_transaction(txid))
+            return BTCDTransaction(self.btcd.decode_raw_transaction(self.btcd.self.btcd.get_raw_transaction(txid)))
 
     def get_transactions(self, txs):
         if self.async:

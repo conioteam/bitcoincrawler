@@ -192,8 +192,11 @@ class TestBitcoinCli(TestCase):
     def test_get_block_invalid_hash(self):
         response = {'error':{"code":-5,"message":"Block not found"}}
         self.register_call(response)
-        with self.assertRaises(BitcoinCliException):
+        with self.assertRaises(BlockNotFound) as assertion:
             self.sut.get_block('invalid_block_hash')
+        exception = assertion.exception
+        self.assertEqual(exception.params, 'invalid_block_hash')
+        self.assertEqual(exception.method, 'getblock')
         payload = json.loads(httpretty.last_request().body.decode('utf-8'))
         self.assertEqual(payload.get('method'), 'getblock')
         self.assertEqual(payload.get('params')[0], 'invalid_block_hash')
@@ -210,7 +213,8 @@ class TestBitcoinCli(TestCase):
 
     @httprettified
     def test_get_block_hash_invalid_height(self):
-        response = {'error':{"code":-5,"message":"Block not found"}}
+        response = {"error": {"code":-8,"message":"Block height out of range"}}
+        #response = {'error':{"code":-5,"message":"Block not found"}}
         self.register_call(response)
         with self.assertRaises(BlockNotFound) as assertion:
             self.sut.get_block_hash(999999999)
@@ -233,3 +237,16 @@ class TestBitcoinCli(TestCase):
         payload = json.loads(httpretty.last_request().body.decode('utf-8'))
         self.assertEqual(payload.get('method'), 'getrawmempool')
         self.assertEqual(payload.get('params'), [])
+
+    @httprettified
+    def test_get_block_hash_unexpected_error(self):
+        response = {"error": "Unexpected error"}
+        self.register_call(response)
+        with self.assertRaises(BitcoinCliException) as assertion:
+            self.sut.get_block_hash(999999999)
+        exception = assertion.exception
+        self.assertEqual(exception.params[0], 999999999)
+        self.assertEqual(exception.method, 'getblockhash')
+        payload = json.loads(httpretty.last_request().body.decode('utf-8'))
+        self.assertEqual(payload.get('method'), 'getblockhash')
+        self.assertEqual(payload.get('params')[0], 999999999)

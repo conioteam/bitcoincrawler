@@ -35,13 +35,16 @@ class BitcoinCli:
             if jsonResponse:
                 r = json.loads(r, parse_float=Decimal)
                 if isinstance(r, dict) and r.get('error'):
-                    raise BitcoinCliException(r["error"], "__call", str({"method": method,
-                                                                   "params": params}))
+                    raise BitcoinCliException(r["error"], method, params)
                 return r
             else:
                 if '"error":' in r:
-                    raise BitcoinCliException(json.loads(r)["error"], "__call", str({"method": method,
-                                                                                   "params": params}))
+                    try:
+                        r = json.loads(r)
+                    except:
+                        r = {'error': r}
+                    finally:
+                        raise BitcoinCliException(r["error"], method, params)
                 return r
 
         except ValueError as e:
@@ -106,15 +109,25 @@ class BitcoinCli:
             return self.call("decoderawtransaction", self.call("getrawtransaction", txid))
 
     def get_block(self, block_hash):
-        return self.call("getblock", block_hash)
+        try:
+            return self.call("getblock", block_hash)
+        except BitcoinCliException as btcde:
+            if btcde.msg.get('code') == -5:
+                raise BlockNotFound(btcde.msg, 'getblock', block_hash)
+            else:
+                raise btcde
+
 
     def get_block_hash(self, block_height):
         try:
             return self.call("getblockhash", block_height, jsonResponse=False)
         except BitcoinCliException as btcde:
-            if btcde.msg.get('code') == -5:
-                raise BlockNotFound(btcde.msg, 'getblockhash', block_height)
-            else:
+            try:
+                if btcde.msg.get('code') == -8:
+                    raise BlockNotFound(btcde.msg, 'getblockhash', block_height)
+                else:
+                    raise btcde
+            except AttributeError:
                 raise btcde
 
     def get_raw_mempool(self):
