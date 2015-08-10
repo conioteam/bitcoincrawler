@@ -31,6 +31,7 @@ def decode_raw_transaction(rawtx, async=False):
     def openfile(rawtx):
         name = (md5(rawtx.encode('utf-8')).hexdigest())
         with open(PREFIX + 'cli_files/transactions/{}.json'.format(name)) as outfile:
+            print(outfile)
             return {"result": json.load(outfile, parse_float=Decimal)}
     if async:
         return coroutine(lambda: openfile(rawtx))()
@@ -43,7 +44,6 @@ def get_block_hash(block_height):
         return {"result": json.load(outfile, parse_float=Decimal).get(block_height)}
 
 def get_block(block_hash):
-    print(block_hash)
     with open(PREFIX + 'cli_files/blocks/{}.json'.format(block_hash)) as outfile:
         return {"result": json.load(outfile, parse_float=Decimal)}
 

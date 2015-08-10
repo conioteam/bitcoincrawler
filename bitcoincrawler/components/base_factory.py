@@ -23,7 +23,7 @@ class AdapterFactory(BaseFactory):
         self.b = blocks_factory
 
     def _get_transaction(self, txid):
-        return self.t._get_transaction(self, txid)
+        return self.t._get_transaction(txid)
 
     def get_mempool_transactions(self, limit=None):
         return self.t.get_mempool_transactions(limit=limit)
