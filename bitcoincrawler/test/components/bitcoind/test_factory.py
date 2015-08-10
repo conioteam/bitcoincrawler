@@ -44,51 +44,73 @@ class TestBitcoindFactory(TestCase):
             self.assertEqual(x.txid, decode_raw_transactions_response[i]['result']['txid'])
         self.assertEqual(i+1, len(request))
 
-    def test_generate_blocks_from_height_explicit_stop(self):
+    def test_generate_blocks_from_height_explicit_stop_with_limit(self):
         i, limit = 0, 3
-        get_block_hash_response = ["block_hash_1", "block_hash_2", "block_hash_3"]
-        get_block_response = [{'nextblockhash': 'block_hash_2',
-                               'hash': 'block_hash_1'},
-                              {'nextblockhash': 'block_hash_3',
-                               'hash': 'block_hash_2'},
-                              {'nextblockhash': 'block_hash_4',
-                               'hash': 'block_hash_3'}]
+        get_block_hash_response = {"result": ["block_hash_1", "block_hash_2", "block_hash_3"]}
+        get_block_response = [{"result": {'nextblockhash': 'block_hash_2',
+                               'hash': 'block_hash_1'}},
+                              {"result":{'nextblockhash': 'block_hash_3',
+                               'hash': 'block_hash_2'}},
+                              {"result":{'nextblockhash': 'block_hash_4',
+                               'hash': 'block_hash_3'}}]
         self.btcd.get_block_hash.side_effect = get_block_hash_response
         self.btcd.get_block.side_effect = get_block_response
-        blocks = self.sut.generate_blocks(height=1, max_iterations=limit)
+        blocks = self.sut.generate_blocks(blockheight=1, max_iterations=limit)
         for i, block in enumerate(blocks):
             self.assertIsInstance(block, BTCDBlock)
-            self.assertEqual(block.hash, get_block_response[i]['hash'])
+            self.assertEqual(block.hash, get_block_response[i]['result']['hash'])
         self.assertEqual(i+1, limit)
 
-    def test_generate_blocks_from_height_0__explicit_stop(self):
+    def test_generate_blocks_from_height_0_explicit_stop_with_limit(self):
         i, limit = 0, 3
-        get_block_hash_response = ["block_hash_1", "block_hash_2", "block_hash_3"]
-        get_block_response = [{'nextblockhash': 'block_hash_2',
-                               'hash': 'block_hash_1'},
-                              {'nextblockhash': 'block_hash_3',
-                               'hash': 'block_hash_2'},
-                              {'nextblockhash': 'block_hash_4',
-                               'hash': 'block_hash_3'}]
+        get_block_hash_response = [{"result": "block_hash_1"},
+                                   {"result":"block_hash_2"},
+                                   {"result": "block_hash_3"}]
+        get_block_response = [{"result":{'nextblockhash': 'block_hash_2',
+                               'hash': 'block_hash_1'}},
+                              {"result":{'nextblockhash': 'block_hash_3',
+                               'hash': 'block_hash_2'}},
+                              {"result":{'nextblockhash': 'block_hash_4',
+                               'hash': 'block_hash_3'}}]
         self.btcd.get_block_hash.side_effect = get_block_hash_response
         self.btcd.get_block.side_effect = get_block_response
-        blocks = self.sut.generate_blocks(height=0, max_iterations=limit)
+        blocks = self.sut.generate_blocks(blockheight=0, max_iterations=limit)
         for i, block in enumerate(blocks):
             self.assertIsInstance(block, BTCDBlock)
-            self.assertEqual(block.hash, get_block_response[i]['hash'])
+            self.assertEqual(block.hash, get_block_response[i]['result']['hash'])
         self.assertEqual(i+1, limit)
 
-    def test_generate_blocks_from_hash_explicit_stop(self):
+    def test_generate_blocks_from_hash_explicit_stop_with_limit(self):
         i, limit = 0, 3
-        get_block_response = [{'nextblockhash': 'block_hash_2',
-                               'hash': 'block_hash_1'},
-                              {'nextblockhash': 'block_hash_3',
-                               'hash': 'block_hash_2'},
-                              {'nextblockhash': 'block_hash_4',
-                               'hash': 'block_hash_3'}]
+        get_block_response = [{"result":{'nextblockhash': 'block_hash_2',
+                               'hash': 'block_hash_1'}},
+                              {"result":{'nextblockhash': 'block_hash_3',
+                               'hash': 'block_hash_2'}},
+                              {"result":{'nextblockhash': 'block_hash_4',
+                               'hash': 'block_hash_3'}}]
         self.btcd.get_block.side_effect = get_block_response
-        blocks = self.sut.generate_blocks(hash='block_hash_1', max_iterations=limit)
+        blocks = self.sut.generate_blocks(blockhash='block_hash_1', max_iterations=limit)
         for i, block in enumerate(blocks):
             self.assertIsInstance(block, BTCDBlock)
-            self.assertEqual(block.hash, get_block_response[i]['hash'])
+            self.assertEqual(block.hash, get_block_response[i]['result']['hash'])
         self.assertEqual(i+1, limit)
+
+    def test_blocks_generator_multiple_starts(self):
+         with self.assertRaises(ValueError):
+            self.sut.generate_blocks(blockhash='cafe', blockheight=1)
+
+    def test_blocks_generator_no_starts(self):
+         with self.assertRaises(ValueError):
+            self.sut.generate_blocks()
+
+    def test_blocks_generator_multiple_stops_height_and_iterations(self):
+         with self.assertRaises(ValueError):
+            self.sut.generate_blocks(max_iterations=1, stop_blockheight=10)
+
+    def test_blocks_generator_multiple_stops_hash_and_iterations(self):
+         with self.assertRaises(ValueError):
+            self.sut.generate_blocks(max_iterations=1, stop_blockhash='cafe')
+
+    def test_blocks_generator_multiple_stops_hash_and_height(self):
+         with self.assertRaises(ValueError):
+            self.sut.generate_blocks(stop_blockhash=1, stop_blockheight=10)
