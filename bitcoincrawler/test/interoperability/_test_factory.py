@@ -25,7 +25,7 @@ class TestBitcoinFactory(TestCase):
                 self.assertIsInstance(vout, BTCDVout)
 
     def test_generate_5_blocks_from_height(self):
-        blocks = [block for block in self.sut.generate_blocks(height=115000, max_iterations=5)]
+        blocks = [block for block in self.sut.generate_blocks(blockheight=115000, max_iterations=5)]
         self.assertEqual(5, len(blocks))
 
         bl_115000_txs = ["8de81b651caaeba5021ae8459b450dffe71c8a630039efc3d5a699fa055eda78",
@@ -45,8 +45,7 @@ class TestBitcoinFactory(TestCase):
                     self.assertIsInstance(vin, BTCDVin)
                 for vout in transaction.vout:
                     self.assertIsInstance(vout, BTCDVout)
-                    
-                    
+
     def test_get_mempool_transactions_async(self):
         transactions = [tx for tx in self.async_sut.get_mempool_transactions()]
         self.assertEqual(100, len(transactions))
@@ -59,7 +58,7 @@ class TestBitcoinFactory(TestCase):
                 self.assertIsInstance(vout, BTCDVout)
 
     def test_generate_5_blocks_from_height_async(self):
-        blocks = [block for block in self.async_sut.generate_blocks(height=115000, max_iterations=5)]
+        blocks = [block for block in self.async_sut.generate_blocks(blockheight=115000, max_iterations=5)]
         self.assertEqual(5, len(blocks))
 
         bl_115000_txs = ["8de81b651caaeba5021ae8459b450dffe71c8a630039efc3d5a699fa055eda78",
@@ -79,3 +78,4 @@ class TestBitcoinFactory(TestCase):
                     self.assertIsInstance(vin, BTCDVin)
                 for vout in transaction.vout:
                     self.assertIsInstance(vout, BTCDVout)
+

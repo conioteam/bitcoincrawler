@@ -14,6 +14,8 @@ class BitcoinScanner:
         self.mempool_outputs_observers = []
         if async:
             self.loop = asyncio.get_event_loop()
+        else:
+            self.loop = None
 
     def __notify_block(self, cur_block):
         for n in self.blocks_observers:

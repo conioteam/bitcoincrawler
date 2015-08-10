@@ -9,10 +9,10 @@ class BaseFactory:
         raise NotImplementedError()
 
     def generate_blocks(self,
-                        hash=None,
-                        height=None,
-                        stop_hash=None,
-                        stop_height=None,
+                        blockhash=None,
+                        blockheight=None,
+                        stop_blockhash=None,
+                        stop_blockheight=None,
                         max_iterations=None):
         raise NotImplementedError()
 
@@ -31,10 +31,15 @@ class AdapterFactory(BaseFactory):
     def get_transactions(self, txs):
         return self.t.get_transactions(txs)
 
-    def generate_blocks(self, hash=None, height=None, stop_hash=None, stop_height=None, max_iterations=None, txs_factory=None): # FIXME
-        return self.b.generate_blocks(hash=hash,
-                                      height=height,
-                                      stop_hash=stop_hash,
-                                      stop_height=stop_height,
+    def generate_blocks(self, blockhash=None,
+                        blockheight=None,
+                        stop_blockhash=None,
+                        stop_blockheight=None,
+                        max_iterations=None,
+                        txs_factory=None): # FIXME
+        return self.b.generate_blocks(blockhash=blockhash,
+                                      blockheight=blockheight,
+                                      stop_blockhash=stop_blockhash,
+                                      stop_blockheight=stop_blockheight,
                                       max_iterations=max_iterations,
                                       txs_factory=self.t)
