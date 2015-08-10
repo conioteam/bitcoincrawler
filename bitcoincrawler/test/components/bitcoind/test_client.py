@@ -98,7 +98,7 @@ class TestBitcoinCli(TestCase):
 
     @httprettified
     def test_decode_raw_transaction_success(self):
-        response = '''{
+        response = {"result": {
                     "txid": "86abfcb417f4be40ea74fc1b3719bea79502e8178aafb3aa144ffc9175f6f132",
                     "version": 1,
                     "vin": [
@@ -141,10 +141,11 @@ class TestBitcoinCli(TestCase):
                             "n": 1
                         }
                     ]
-                }'''
+                }
+        }
         self.register_call(response)
         r = self.sut.decode_raw_transaction('a_raw_transaction')
-        json_response = json.loads(str(response), parse_float=Decimal)
+        json_response = json.loads(json.dumps(response), parse_float=Decimal)
         self.assertDictEqual(r, json_response)
         payload = json.loads(httpretty.last_request().body.decode('utf-8'))
         self.assertEqual(payload.get('method'), 'decoderawtransaction')
@@ -162,7 +163,7 @@ class TestBitcoinCli(TestCase):
 
     @httprettified
     def test_get_block(self):
-        response = '''{
+        response = {'result': {
             "hash" : "000000000000c5e7fb216de3593318708b3372afb511f3824c4a9f7300a39529",
             "confirmations" : 253627,
             "size" : 3263,
@@ -179,11 +180,11 @@ class TestBitcoinCli(TestCase):
             "chainwork" : "000000000000000000000000000000000000000000000000257e64bca853cb2b",
             "previousblockhash" : "0000000000007f51a1c13814ecb9698f56b91b2599552d7c47ec1d5b7517ae81",
             "nextblockhash" : "0000000000000f246cec2e9f71acc743db66da926a15cd31a2739612c64546dd"
-        }'''
+        }}
         self.register_call(response)
         block_hash = '000000000000c5e7fb216de3593318708b3372afb511f3824c4a9f7300a39529'
         r = self.sut.get_block(block_hash)
-        self.assertEqual(r.get('hash'), block_hash)
+        self.assertEqual(r['result'].get('hash'), block_hash)
         payload = json.loads(httpretty.last_request().body.decode('utf-8'))
         self.assertEqual(payload.get('method'), 'getblock')
         self.assertEqual(payload.get('params')[0], '000000000000c5e7fb216de3593318708b3372afb511f3824c4a9f7300a39529')
@@ -203,13 +204,13 @@ class TestBitcoinCli(TestCase):
 
     @httprettified
     def test_get_block_hash(self):
-        response = {"result": "cafebabe"}
+        response = {"result": "block_hash"}
         self.register_call(response)
-        r = self.sut.get_block_hash('cafe')
+        r = self.sut.get_block_hash(123456)
         self.assertEqual(r, response)
         payload = json.loads(httpretty.last_request().body.decode('utf-8'))
         self.assertEqual(payload.get('method'), 'getblockhash')
-        self.assertEqual(payload.get('params')[0], 'cafe')
+        self.assertEqual(payload.get('params')[0], 123456)
 
     @httprettified
     def test_get_block_hash_invalid_height(self):
@@ -227,10 +228,10 @@ class TestBitcoinCli(TestCase):
 
     @httprettified
     def test_get_raw_mempool(self):
-        response = ["0002e85046f0a30502665aeedbe0c4d8995f5036706cd64b60d53e74cff321f7",
+        response = {'result': ["0002e85046f0a30502665aeedbe0c4d8995f5036706cd64b60d53e74cff321f7",
                     "000402b580749adf78b426b70be5e5cc852c3438365a23be9a51f68feede9063",
                     "0005fd7c4dbb05d00b3160024c3b40d962b89d27a4ce3b5016fc7ee7b922f844",
-                    "00094dccfab0f4a730cda29b96104b02dfb693f762256b40d4656826a788deb4"]
+                    "00094dccfab0f4a730cda29b96104b02dfb693f762256b40d4656826a788deb4"]}
         self.register_call(response)
         r = self.sut.get_raw_mempool()
         self.assertEqual(r, response)
