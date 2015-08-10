@@ -18,21 +18,23 @@ class BitcoindFactory(BaseFactory):
         mempool = self.btcd.get_raw_mempool().get('result')
         return self.get_transactions((mempool[:limit]) if limit else mempool)
 
-    def _get_transaction(self, txid):
+    def _get_transaction(self, txid, parent_block=None):
+        meta = {'parent_block': parent_block}
         if self.async:
             return chain(txid,
                          lambda txid: self.btcd.get_raw_transaction(txid, async=True),
                          lambda rawtx: self.btcd.decode_raw_transaction(rawtx.get('result'), async=True),
-                         asyncio.coroutine(lambda json_obj: BTCDTransaction(json_obj.get('result'))))
+                         asyncio.coroutine(lambda json_obj: BTCDTransaction(json_obj.get('result'),
+                                                                            meta=meta)))
         else:
             rawtx = self.btcd.get_raw_transaction(txid)
             json_obj = self.btcd.decode_raw_transaction(rawtx.get('result'))
             return BTCDTransaction(json_obj.get('result'))
 
-    def get_transactions(self, txs):
+    def get_transactions(self, txs, parent_block=None):
         if self.async:
             loop = asyncio.get_event_loop()
-            tasks = (self._get_transaction(tx) for tx in txs)
+            tasks = (self._get_transaction(tx, parent_block=parent_block) for tx in txs)
             return loop.run_until_complete(asyncio.gather(*tasks))
         else:
             return (self._get_transaction(tx) for tx in txs)

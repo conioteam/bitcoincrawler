@@ -2,73 +2,69 @@ from bitcoincrawler.components.model import Block, Transaction, Vin, Vout
 
 
 class BTCDBlock(Block):
-    def __init__(self, json_obj, factory):
-        self.json_obj = json_obj
-        self.factory = factory
+    def __init__(self, json_obj, txs_factory):
+        self.__json_obj = json_obj
+        self.__txs_factory = txs_factory
 
     @property
     def hash(self):
-        return self.json_obj.get('hash')
-
-    @property
-    def confirmations(self):
-        return self.json_obj.get('confirmations')
+        return self.__json_obj.get('hash')
 
     @property
     def size(self):
-        return self.json_obj.get('size')
+        return self.__json_obj.get('size')
 
     @property
     def height(self):
-        return self.json_obj.get('height')
+        return self.__json_obj.get('height')
 
     @property
     def version(self):
-        return self.json_obj.get('version')
+        return self.__json_obj.get('version')
 
     @property
     def merkleroot(self):
-        return self.json_obj.get('merkleroot')
+        return self.__json_obj.get('merkleroot')
 
     @property
     def tx(self):
-        txs = self.json_obj.get('tx')
-        return self.factory.get_transactions(txs)
+        txs = self.__json_obj.get('tx')
+        return self.__txs_factory.get_transactions(txs, parent_block=self.__json_obj['hash'])
 
     @property
     def time(self):
-        return self.json_obj.get('time')
+        return self.__json_obj.get('time')
 
     @property
     def coinbase(self):
-        txs = self.json_obj.get('tx')
+        txs = self.__json_obj.get('tx')
         if txs:
-            return next(self.factory.get_transactions([txs[0],]))
+            return next(self.__txs_factory.get_transactions([txs[0],]))
         return None
 
     @property
     def nonce(self):
-        return self.json_obj.get('nonce')
+        return self.__json_obj.get('nonce')
 
     @property
     def bits(self):
-        return self.json_obj.get('bits')
+        return self.__json_obj.get('bits')
 
     @property
     def difficulty(self):
-        return self.json_obj.get('difficulty')
+        return self.__json_obj.get('difficulty')
 
     @property
     def chainwork(self):
-        return self.json_obj.get('chainwork')
+        return self.__json_obj.get('chainwork')
 
     @property
     def previousblockhash(self):
-        return self.json_obj.get('previousblockhash')
+        return self.__json_obj.get('previousblockhash')
 
     @property
     def nextblockhash(self):
-        return self.json_obj.get('nextblockhash')
+        return self.__json_obj.get('nextblockhash')
 
 
 class BTCDTransaction(Transaction):
@@ -78,41 +74,46 @@ class BTCDTransaction(Transaction):
         Be strict.
         """
         meta = meta if meta else dict()
-        self.json_obj = json_obj
-        self.__in_block = meta.get('in_block')
+        self.__json_obj = json_obj
+        self.__parent_block = meta.get('parent_block')
+
+    @property
+    def is_coinbase(self):
+        return bool(self.__json_obj.get('vin')[0].get('coinbase'))
 
     @property
     def txid(self):
-        return self.json_obj.get('txid')
+        return self.__json_obj.get('txid')
 
     @property
     def version(self):
-        return self.json_obj.get('version')
+        return self.__json_obj.get('version')
 
     @property
     def locktime(self):
-        return self.json_obj.get('locktime')
+        return self.__json_obj.get('locktime')
 
     @property
     def vin(self):
-        return (BTCDVin(vin) for vin in self.json_obj.get('vin'))
+        return (BTCDVin(vin, self) for vin in self.__json_obj.get('vin'))
 
     @property
     def vout(self):
-        return (BTCDVout(vout) for vout in self.json_obj.get('vout'))
+        return (BTCDVout(vout, self) for vout in self.__json_obj.get('vout'))
 
     @property
-    def in_block(self):
-        return self.json_obj.get('in_block')
+    def parent_block(self):
+        return self.__parent_block
 
 
 class BTCDVin(Vin):
-    def __init__(self, json_obj):
-        self.json_obj = json_obj
+    def __init__(self, json_obj, parent_tx):
+        self.__json_obj = json_obj
+        self.__parent_tx = parent_tx
 
     @property
     def scriptSig(self):
-        j = self.json_obj
+        j = self.__json_obj
         class ScriptSig:
             @property
             def hex(self):
@@ -128,35 +129,37 @@ class BTCDVin(Vin):
 
     @property
     def sequence(self):
-        return self.json_obj.get('sequence')
+        return self.__json_obj.get('sequence')
 
     @property
     def vout(self):
-        return self.json_obj.get('vout')
+        return self.__json_obj.get('vout')
 
     @property
     def txid(self):
-        return self.json_obj.get('txid')
+        return self.__json_obj.get('txid')
 
     @property
     def coinbase(self):
-        return self.json_obj.get('coinbase')
+        return self.__json_obj.get('coinbase')
 
 
 class BTCDVout(Vout):
-    def __init__(self, json_obj):
-        self.json_obj = json_obj
+    def __init__(self, json_obj, parent_tx):
+        self.__json_obj = json_obj
+        self.__parent_tx = parent_tx
+
     @property
     def value(self):
-        return self.json_obj.get('value')
+        return self.__json_obj.get('value')
 
     @property
     def n(self):
-        return self.json_obj.get('n')
+        return self.__json_obj.get('n')
 
     @property
     def scriptPubKey(self):
-        j = self.json_obj
+        j = self.__json_obj
         class ScriptPubKey:
             @property
             def asm(self):

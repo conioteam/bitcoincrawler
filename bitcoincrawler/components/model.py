@@ -39,6 +39,10 @@ class Transaction:
     def vouts(self):
         raise NotImplementedError()
 
+    @property
+    def is_coinbase(self):
+        raise NotImplementedError()
+
 class Vin:
     @property
     def scriptSig(self):
