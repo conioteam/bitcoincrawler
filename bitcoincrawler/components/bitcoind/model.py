@@ -32,7 +32,8 @@ class BTCDBlock(Block):
 
     @property
     def tx(self):
-        return self.factory.get_transactions(self.json_obj.get('tx'))
+        txs = self.json_obj.get('tx')
+        return self.factory.get_transactions(txs)
 
     @property
     def time(self):

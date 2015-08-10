@@ -16,7 +16,7 @@ class TestBitcoindFactory(TestCase):
         self.btcd.reset_mock()
 
     def test_get_mempool_transactions(self):
-        response = ["txid1", "txid2", "txid3"]
+        response = {"result": ["txid1", "txid2", "txid3"]}
         self.btcd.get_raw_mempool.side_effect = [response]
         i, limit = 0, 2
         r = self.sut.get_mempool_transactions(limit=limit)
@@ -28,8 +28,12 @@ class TestBitcoindFactory(TestCase):
 
     def test_get_transactions(self):
         request = ["txid1", "txid2", "txid3"]
-        get_raw_transactions_response = ["rawtx1", "rawtx2", "rawtx3"]
-        decode_raw_transactions_response = [{"txid": "rawtx1"}, {"txid": "rawtx2"}, {"txid": "rawtx3"}]
+        get_raw_transactions_response = [{"result": "rawtx1"},
+                                         {"result":"rawtx2"},
+                                         {"result": "rawtx3"}]
+        decode_raw_transactions_response = [{"result": {"txid": "rawtx1"}},
+                                            {"result": {"txid": "rawtx2"}},
+                                            {"result": {"txid": "rawtx3"}}]
         i = 0
         self.btcd.get_raw_transaction.side_effect = get_raw_transactions_response
         self.btcd.decode_raw_transaction.side_effect = decode_raw_transactions_response
@@ -37,5 +41,5 @@ class TestBitcoindFactory(TestCase):
         self.assertIsInstance(r, GeneratorType)
         for i, x in enumerate(r):
             self.assertIsInstance(x, BTCDTransaction)
-            self.assertEqual(x.txid, decode_raw_transactions_response[i]['txid'])
+            self.assertEqual(x.txid, decode_raw_transactions_response[i]['result']['txid'])
         self.assertEqual(i+1, len(request))

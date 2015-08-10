@@ -15,16 +15,19 @@ class BitcoindFactory(BaseFactory):
         self.async = async
 
     def get_mempool_transactions(self, limit=None):
-        return self.get_transactions((self.btcd.get_raw_mempool()[:limit]) if limit else self.btcd.get_raw_mempool())
+        mempool = self.btcd.get_raw_mempool().get('result')
+        return self.get_transactions((mempool[:limit]) if limit else mempool)
 
     def _get_transaction(self, txid):
         if self.async:
             return chain(txid,
                          lambda txid: self.btcd.get_raw_transaction(txid, async=True),
-                         lambda rawtx: self.btcd.decode_raw_transaction(rawtx, async=True),
-                         asyncio.coroutine(lambda json_tx: BTCDTransaction(json_tx)))
+                         lambda rawtx: self.btcd.decode_raw_transaction(rawtx.get('result'), async=True),
+                         asyncio.coroutine(lambda json_obj: BTCDTransaction(json_obj.get('result'))))
         else:
-            return BTCDTransaction(self.btcd.decode_raw_transaction(self.btcd.self.btcd.get_raw_transaction(txid)))
+            rawtx = self.btcd.get_raw_transaction(txid)
+            json_obj = self.btcd.decode_raw_transaction(rawtx.get('result'))
+            return BTCDTransaction(json_obj.get('result'))
 
     def get_transactions(self, txs):
         if self.async:
@@ -34,46 +37,65 @@ class BitcoindFactory(BaseFactory):
         else:
             return (self._get_transaction(tx) for tx in txs)
 
-    def generate_blocks(self, hash=None, height=None, stop_hash=None, stop_height=None, max_iterations=None, txs_factory=None):
+    def generate_blocks(self, blockhash=None,
+                        blockheight=None,
+                        stop_blockhash=None,
+                        stop_blockheight=None,
+                        max_iterations=None,
+                        txs_factory=None):
         """
         A starting point is mandatory. Only one can be specified.
         Stop point is optional. Only one can be specified.
-        :param hash: starting point (block hash)
-        :param height: starting point (block height, 0 is valid).
-        :param stop_hash: stop point (block hash)
-        :param stop_height: stop point (block height)
+        :param blockhash: starting point (block hash)
+        :param blockheight: starting point (block height, 0 is valid).
+        :param stop_blockhash: stop point (block hash)
+        :param stop_blockheight: stop point (block height)
         :param max_iterations: stop point (see this as "how many blocks I want to generate?")
         :param txs_factory: atm reserved to the adapter, if used # FIXME - review
         :return: BTCDBlock objects generator
         """
-        if ((stop_height and stop_hash) or (stop_height and max_iterations) or (stop_hash and max_iterations)):
+        if ((stop_blockheight and stop_blockhash) or (stop_blockheight and max_iterations) or (stop_blockhash and max_iterations)):
             raise ValueError('specify at most one stop condition',
                              'blocks_from',
-                             'stop_hash: {}, stop_height: {}, max_iterations: {}'.format(stop_hash,
-                                                                                         stop_height,
+                             'stop_hash: {}, stop_height: {}, max_iterations: {}'.format(stop_blockhash,
+                                                                                         stop_blockheight,
                                                                                          max_iterations))
 
-        prev_hash = None
-        if hash and height != None or (not hash and height == None):
+        if blockhash and blockheight != None or (not blockhash and blockheight == None):
             raise ValueError('specify only one (and at least) start condition',
                              'blocks_from',
-                             'hash: {}, height: {}'.format(hash, height))
-        if stop_height:
-            stop_check = lambda i, block: block.height > stop_height
-        elif max_iterations:
-            stop_check = lambda i, block: i>= max_iterations
-        else:
-            stop_check = lambda i, block: prev_hash and (prev_hash == stop_hash)
-        i = 0
-        hash = self.btcd.get_block_hash(height) if not hash else hash
-        print('producing blocks...')
-        while True:
-            block = BTCDBlock(self.btcd.get_block(hash), self if not txs_factory else txs_factory)
-            if stop_check(i, block):
-                break
-            yield block
-            prev_hash = block.hash
-            hash = block.nextblockhash
-            if not hash:
-                break
-            i += 1
+                             'hash: {}, height: {}'.format(blockhash, blockheight))
+
+        def generator(blockhash=None,
+                      blockheight=None,
+                      stop_blockhash=None,
+                      stop_blockheight=None,
+                      max_iterations=None,
+                      txs_factory=None):
+            if stop_blockheight:
+                stop_check = lambda i, block: block.height > stop_blockheight
+            elif max_iterations:
+                stop_check = lambda i, block: i>= max_iterations
+            else:
+                stop_check = lambda i, block: prev_hash and (prev_hash == stop_blockhash)
+            i = 0
+            blockhash = self.btcd.get_block_hash(blockheight).get('result') if not blockhash else blockhash
+            print('producing blocks...')
+            while True:
+                jsonblock = self.btcd.get_block(blockhash).get('result')
+                block = BTCDBlock(jsonblock, self if not txs_factory else txs_factory)
+                if stop_check(i, block):
+                    break
+                yield block
+                prev_hash = block.hash
+                blockhash = block.nextblockhash
+                if not blockhash:
+                    break
+                i += 1
+
+        return generator(blockhash=blockhash,
+                        blockheight=blockheight,
+                        stop_blockhash=stop_blockhash,
+                        stop_blockheight=stop_blockheight,
+                        max_iterations=max_iterations,
+                        txs_factory=txs_factory)

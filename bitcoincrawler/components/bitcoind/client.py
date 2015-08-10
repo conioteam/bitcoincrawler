@@ -11,7 +11,6 @@ from bitcoincrawler.components.tools import chain
 import aiohttp
 from requests.exceptions import ConnectionError
 
-
 class BitcoinCli:
     """
     bitcoind v0.11
@@ -24,34 +23,25 @@ class BitcoinCli:
         if async and async_limit:
             self.async_lock = asyncio.Semaphore(async_limit)
 
-    def call(self, method, *params, async=False, jsonResponse=True):
+    def call(self, method, *params, async=False):
         try:
-            return self.__call(method, *params, async=async, jsonResponse=jsonResponse)
+            return self.__call(method, *params, async=async)
         except ConnectionError:
             raise BitcoinCliException('', '', '')
 
-    def __parse_res(self, r, method, params, jsonResponse=True):
+    def __parse_res(self, r, method, params):
         try:
-            if jsonResponse:
-                r = json.loads(r, parse_float=Decimal)
-                if isinstance(r, dict) and r.get('error'):
-                    raise BitcoinCliException(r["error"], method, params)
+            r = json.loads(r, parse_float=Decimal)
+            if isinstance(r, dict) and r.get('error'):
+                raise BitcoinCliException(r["error"], method, params)
+            elif isinstance(r, list) and method == 'getrawmempool':
                 return r
-            else:
-                if '"error":' in r:
-                    try:
-                        r = json.loads(r)
-                    except:
-                        r = {'error': r}
-                    finally:
-                        raise BitcoinCliException(r["error"], method, params)
-                return r
-
+            return r
         except ValueError as e:
             raise BitcoinCliException(e, method, params)
 
     @asyncio.coroutine
-    def __aiohttp_routine(self, payload, jsonResponse=True):
+    def __aiohttp_routine(self, payload):
         btcd_headers = {"content-type": "application/json", "Authorization": self.btcd_auth_header_async}
         with(yield from self.async_lock):
             r = yield from aiohttp.request('POST', self.btcd_url,
@@ -59,9 +49,9 @@ class BitcoinCli:
                                                    headers=btcd_headers)
             r = yield from r.text()
 
-            return self.__parse_res(r, payload['method'], payload['params'], jsonResponse=jsonResponse)
+            return self.__parse_res(r, payload['method'], payload['params'])
 
-    def __call(self, method, *params, async=False, jsonResponse=False):
+    def __call(self, method, *params, async=False):
         payload = {
             "method": method,
             "params": params,
@@ -69,44 +59,32 @@ class BitcoinCli:
             "id": 0,
         }
         if async:
-            return self.__aiohttp_routine(payload, jsonResponse=jsonResponse)
-
+            return self.__aiohttp_routine(payload)
         else:
             btcd_headers = {"content-type": "application/json", "Authorization": self.btcd_auth_header}
             res = requests.post(self.btcd_url,
                                 data=json.dumps(payload),
                                 headers=btcd_headers).text
-            return self.__parse_res(res, method, params, jsonResponse=jsonResponse)
+            return self.__parse_res(res, method, params)
     
-    def get_raw_transaction(self, txid, async=False, jsonResponse=False):
+    def get_raw_transaction(self, txid, async=False):
         try:
             if async:
-                return chain(txid,
-                             lambda txid: self.call("getrawtransaction", txid, async=async, jsonResponse=jsonResponse))
+                return chain(txid, lambda txid: self.call("getrawtransaction", txid, async=async))
             else:
-                return self.call("getrawtransaction", txid, jsonResponse=jsonResponse)
+                return self.call("getrawtransaction", txid)
         except BitcoinCliException as btcde:
-            if btcde.msg.get('code') == -5:
+            if isinstance(btcde.msg, dict) and btcde.msg.get('code') == -5:
                 raise TransactionNotFound(btcde.msg, 'getrawtransaction', txid)
             else:
                 raise btcde
 
-    def decode_raw_transaction(self, raw_transaction):
-        return self.call("decoderawtransaction", raw_transaction)
-
-    def get_and_decode_transaction(self, txid, async=False):
-        """
-        the bitcoincore gettransaction RPC call, often, is not enough.
-        if you need it, you can use default_method
-        :param txid:
-        :return:
-        """
+    def decode_raw_transaction(self, raw_transaction, async=False):
         if async:
-            return chain(txid,
-                         lambda txid: self.call("getrawtransaction", txid, async=async),
-                         lambda rawtx: self.call("decoderawtransaction", rawtx, async=async))
+            return chain(raw_transaction,
+                         lambda txid: self.call("decoderawtransaction", raw_transaction, async=async))
         else:
-            return self.call("decoderawtransaction", self.call("getrawtransaction", txid))
+            return self.call("decoderawtransaction", raw_transaction)
 
     def get_block(self, block_hash):
         try:
@@ -117,13 +95,12 @@ class BitcoinCli:
             else:
                 raise btcde
 
-
     def get_block_hash(self, block_height):
         try:
-            return self.call("getblockhash", block_height, jsonResponse=False)
+            return self.call("getblockhash", block_height)
         except BitcoinCliException as btcde:
             try:
-                if btcde.msg.get('code') == -8:
+                if isinstance(btcde.msg, dict) and btcde.msg.get('code') == -8:
                     raise BlockNotFound(btcde.msg, 'getblockhash', block_height)
                 else:
                     raise btcde

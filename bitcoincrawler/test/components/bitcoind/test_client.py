@@ -88,10 +88,10 @@ class TestBitcoinCli(TestCase):
 
     @httprettified
     def test_get_raw_transaction(self):
-        response = 'valid_rawtx'
+        response = {"result": "valuid_rawtx"}
         self.register_call(response)
         r = self.sut.get_raw_transaction('valid_txid')
-        self.assertEqual(r, 'valid_rawtx')
+        self.assertEqual(r, response)
         payload = json.loads(httpretty.last_request().body.decode('utf-8'))
         self.assertEqual(payload.get('method'), 'getrawtransaction')
         self.assertEqual(payload.get('params')[0], 'valid_txid')
@@ -203,10 +203,10 @@ class TestBitcoinCli(TestCase):
 
     @httprettified
     def test_get_block_hash(self):
-        response = 'cafebabe'
+        response = {"result": "cafebabe"}
         self.register_call(response)
         r = self.sut.get_block_hash('cafe')
-        self.assertEqual(r, 'cafebabe')
+        self.assertEqual(r, response)
         payload = json.loads(httpretty.last_request().body.decode('utf-8'))
         self.assertEqual(payload.get('method'), 'getblockhash')
         self.assertEqual(payload.get('params')[0], 'cafe')
