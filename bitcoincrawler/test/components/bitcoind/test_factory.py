@@ -43,3 +43,25 @@ class TestBitcoindFactory(TestCase):
             self.assertIsInstance(x, BTCDTransaction)
             self.assertEqual(x.txid, decode_raw_transactions_response[i]['result']['txid'])
         self.assertEqual(i+1, len(request))
+
+    def test_blocks_generator_multiple_starts(self):
+         with self.assertRaises(ValueError):
+            self.sut.generate_blocks(blockhash='cafe', blockheight=1)
+
+    def test_blocks_generator_no_starts(self):
+         with self.assertRaises(ValueError):
+            self.sut.generate_blocks()
+
+    def test_blocks_generator_multiple_stops_height_and_iterations(self):
+         with self.assertRaises(ValueError):
+            self.sut.generate_blocks(max_iterations=1, stop_blockheight=10)
+
+    def test_blocks_generator_multiple_stops_hash_and_iterations(self):
+         with self.assertRaises(ValueError):
+            self.sut.generate_blocks(max_iterations=1, stop_blockhash='cafe')
+
+    def test_blocks_generator_multiple_stops_hash_and_height(self):
+         with self.assertRaises(ValueError):
+            self.sut.generate_blocks(stop_blockhash=1, stop_blockheight=10)
+
+    
