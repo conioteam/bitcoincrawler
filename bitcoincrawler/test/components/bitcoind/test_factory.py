@@ -95,6 +95,41 @@ class TestBitcoindFactory(TestCase):
             self.assertEqual(block.hash, get_block_response[i]['result']['hash'])
         self.assertEqual(i+1, limit)
 
+    def test_generate_blocks_from_height_explicit_natural_stop(self):
+        get_block_hash_response = {"result": ["block_hash_1", "block_hash_2", "block_hash_3"]}
+        get_block_response = [{"result": {'nextblockhash': 'block_hash_2',
+                               'hash': 'block_hash_1'}},
+                              {"result":{'nextblockhash': 'block_hash_3',
+                               'hash': 'block_hash_2'}},
+                              {"result":{'nextblockhash': None,
+                               'hash': 'block_hash_3'}}]
+        self.btcd.get_block_hash.side_effect = get_block_hash_response
+        self.btcd.get_block.side_effect = get_block_response
+        blocks = self.sut.generate_blocks(blockheight=1)
+        i = 0
+        for i, block in enumerate(blocks):
+            self.assertIsInstance(block, BTCDBlock)
+            self.assertEqual(block.hash, get_block_response[i]['result']['hash'])
+        self.assertEqual(i+1, 3)
+
+    def test_generate_blocks_from_height_explicit_stop_height(self):
+        get_block_hash_response = {"result": ["block_hash_1", "block_hash_2", "block_hash_3"]}
+
+        get_block_response = [{"result": {'nextblockhash': 'block_hash_2', 'height': 1,
+                               'hash': 'block_hash_1'}},
+                              {"result":{'nextblockhash': 'block_hash_3', 'height': 2,
+                               'hash': 'block_hash_2'}},
+                              {"result":{'nextblockhash': 'block_hash_4', 'height': 3,
+                               'hash': 'block_hash_3'}}]
+        self.btcd.get_block_hash.side_effect = get_block_hash_response
+        self.btcd.get_block.side_effect = get_block_response
+        blocks = self.sut.generate_blocks(blockheight=1, stop_blockheight=3)
+        i = 0
+        for i, block in enumerate(blocks):
+            self.assertIsInstance(block, BTCDBlock)
+            self.assertEqual(block.hash, get_block_response[i]['result']['hash'])
+        self.assertEqual(i+1, 3)
+
     def test_blocks_generator_multiple_starts(self):
          with self.assertRaises(ValueError):
             self.sut.generate_blocks(blockhash='cafe', blockheight=1)

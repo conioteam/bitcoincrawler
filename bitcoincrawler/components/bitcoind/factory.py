@@ -72,6 +72,7 @@ class BitcoindFactory(BaseFactory):
                       stop_blockheight=None,
                       max_iterations=None,
                       txs_factory=None):
+            prev_hash = None
             if stop_blockheight:
                 stop_check = lambda i, block: block.height > stop_blockheight
             elif max_iterations:
