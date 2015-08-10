@@ -43,6 +43,7 @@ def get_block_hash(block_height):
         return {"result": json.load(outfile, parse_float=Decimal).get(block_height)}
 
 def get_block(block_hash):
+    print(block_hash)
     with open(PREFIX + 'cli_files/blocks/{}.json'.format(block_hash)) as outfile:
         return {"result": json.load(outfile, parse_float=Decimal)}
 

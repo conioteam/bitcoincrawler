@@ -80,7 +80,8 @@ class BitcoindFactory(BaseFactory):
             else:
                 stop_check = lambda i, block: prev_hash and (prev_hash == stop_blockhash)
             i = 0
-            blockhash = self.btcd.get_block_hash(blockheight)if not blockhash else blockhash
+
+            blockhash = self.btcd.get_block_hash(blockheight).get('result') if not blockhash else blockhash
             print('producing blocks...')
             while True:
                 jsonblock = self.btcd.get_block(blockhash).get('result')
@@ -95,8 +96,8 @@ class BitcoindFactory(BaseFactory):
                 i += 1
 
         return generator(blockhash=blockhash,
-                        blockheight=blockheight,
-                        stop_blockhash=stop_blockhash,
-                        stop_blockheight=stop_blockheight,
-                        max_iterations=max_iterations,
-                        txs_factory=txs_factory)
+                         blockheight=blockheight,
+                         stop_blockhash=stop_blockhash,
+                         stop_blockheight=stop_blockheight,
+                         max_iterations=max_iterations,
+                         txs_factory=txs_factory)

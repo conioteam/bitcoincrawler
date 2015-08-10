@@ -46,7 +46,9 @@ class TestBitcoindFactory(TestCase):
 
     def test_generate_blocks_from_height_explicit_stop_with_limit(self):
         i, limit = 0, 3
-        get_block_hash_response = {"result": ["block_hash_1", "block_hash_2", "block_hash_3"]}
+        get_block_hash_response = [{"result": "block_hash_1"},
+                                   {"result": "block_hash_2"},
+                                   {"result": "block_hash_3"}]
         get_block_response = [{"result": {'nextblockhash': 'block_hash_2',
                                'hash': 'block_hash_1'}},
                               {"result":{'nextblockhash': 'block_hash_3',
@@ -96,7 +98,9 @@ class TestBitcoindFactory(TestCase):
         self.assertEqual(i+1, limit)
 
     def test_generate_blocks_from_height_explicit_natural_stop(self):
-        get_block_hash_response = {"result": ["block_hash_1", "block_hash_2", "block_hash_3"]}
+        get_block_hash_response = [{"result": "block_hash_1"},
+                                   {"result": "block_hash_2"},
+                                   {"result": "block_hash_3"}]
         get_block_response = [{"result": {'nextblockhash': 'block_hash_2',
                                'hash': 'block_hash_1'}},
                               {"result":{'nextblockhash': 'block_hash_3',
@@ -113,7 +117,9 @@ class TestBitcoindFactory(TestCase):
         self.assertEqual(i+1, 3)
 
     def test_generate_blocks_from_height_explicit_stop_height(self):
-        get_block_hash_response = {"result": ["block_hash_1", "block_hash_2", "block_hash_3"]}
+        get_block_hash_response = [{"result": "block_hash_1"},
+                                   {"result": "block_hash_2"},
+                                   {"result": "block_hash_3"}]
 
         get_block_response = [{"result": {'nextblockhash': 'block_hash_2', 'height': 1,
                                'hash': 'block_hash_1'}},
