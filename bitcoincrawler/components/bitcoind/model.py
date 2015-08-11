@@ -28,8 +28,8 @@ class BTCDBlock(Block):
 
     @property
     def tx(self):
-        txs = self.__json_obj.get('tx')
-        return self.__txs_factory.get_transactions(txs, parent_block=self.__json_obj['hash'])
+        return self.__txs_factory.get_transactions(self.__json_obj.get('tx'),
+                                                   parent_block=self.__json_obj['hash'])
 
     @property
     def time(self):
@@ -37,10 +37,7 @@ class BTCDBlock(Block):
 
     @property
     def coinbase(self):
-        txs = self.__json_obj.get('tx')
-        if txs:
-            return next(self.__txs_factory.get_transactions([txs[0],]))
-        return None
+        return next(self.__txs_factory.get_transactions([self.__json_obj.get('tx')[0],]))
 
     @property
     def nonce(self):
@@ -102,7 +99,7 @@ class BTCDTransaction(Transaction):
         return (BTCDVout(vout, self) for vout in self.__json_obj.get('vout'))
 
     @property
-    def parent_block(self):
+    def parent(self):
         return self.__parent_block
 
 
@@ -110,6 +107,10 @@ class BTCDVin(Vin):
     def __init__(self, json_obj, parent_tx):
         self.__json_obj = json_obj
         self.__parent_tx = parent_tx
+
+    @property
+    def parent(self):
+        return self.__parent_tx
 
     @property
     def scriptSig(self):
@@ -148,6 +149,10 @@ class BTCDVout(Vout):
     def __init__(self, json_obj, parent_tx):
         self.__json_obj = json_obj
         self.__parent_tx = parent_tx
+
+    @property
+    def parent(self):
+        return self.__parent_tx
 
     @property
     def value(self):
