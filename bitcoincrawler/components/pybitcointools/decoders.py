@@ -1,14 +1,7 @@
 from bitcoin import deserialize_script
 from bitcoincrawler.components.pybitcointools.scripts import SCRIPTS
-try:
-    from bitcoin.py2specials import bin_to_b58check
-except:
-    from bitcoin.py3specials import bin_to_b58check
-
-from bitcoin import pubtoaddr
-
+from bitcoin import pubtoaddr, hex_to_b58check
 from decimal import Decimal
-from binascii import unhexlify
 
 class VINDecoder:
     @classmethod
@@ -21,11 +14,14 @@ class VINDecoder:
                               },
                 'sequence': vin['sequence']}
 
-
 class VOUTDecoder:
+    """
+    This needs to be edited and compliant with the Bitcoin Scripting Language.
+    Now catch only frequent cases.
+    """
     @classmethod
     def return_script(cls,
-                      value=None,
+                      value=Decimal('0.0'),
                       n=None,
                       asm=None,
                       hex_script=None,
@@ -46,20 +42,23 @@ class VOUTDecoder:
     @classmethod
     def decode(cls, vout, n):
         hex_script = vout['script']
-        script = deserialize_script(hex_script)
-        print(script)
-        if script[0] == 118 and script[1] == 169 and len(script) == 5 and len(script[2]) == 40:
+        script = [0 if x == None else x for x in deserialize_script(hex_script)]
+        if len(script) == 5 and script[0] == 118 and script[1] == 169 and isinstance(script[2], str) and \
+                        len(script[2]) == 40:
             decoder = VOUTDecoder._decode_PayToPubKeyHash
-        elif script[0] == 169 and len(script) == 3 and len(script[1]) == 40:
+        elif len(script) == 3 and script[0] == 169 and len(script[1]) == 40 and script[2] == 135:
             decoder = VOUTDecoder._decode_P2SH
-        elif not isinstance(script[0],int) and (len(script[0]) == 130 or len(script[0]) == 66) and script[1] == 172:
+        elif len(script) == 2 and not isinstance(script[0],int) and (len(script[0]) == 130 or len(script[0]) == 66) \
+                and script[1] == 172:
             decoder = VOUTDecoder._decode_PayToPubKey
         elif script[0] == 106:
             decoder = VOUTDecoder._decode_OPRETURN
-        elif script[0] in range(1, 21):
-            decoder = VOUTDecoder._decode_OP_INT
+        elif script[0] in range(1, 21) and script[-1] == 174 and script[-2] in range(1, 21):
+            decoder = VOUTDecoder._decode_CHECKMULTISIG
+        elif len(script) == 1 and not isinstance(script[0],int):
+            decoder = VOUTDecoder._decode_OPDATA_nonstandard
         else:
-            raise ValueError('Unknown script') # TODO
+            decoder = VOUTDecoder._decode_unknown_script
 
         return decoder({'d': vout,
                         'n': n,
@@ -67,7 +66,6 @@ class VOUTDecoder:
 
     @classmethod
     def _decode_PayToPubKeyHash(cls, data):
-        b58_address = bin_to_b58check(unhexlify(data['s'][2]))
         asm = '{} {} {} {} {}'.format(SCRIPTS[data['s'][0]],
                                    SCRIPTS[data['s'][1]],
                                    data['s'][2],
@@ -75,7 +73,7 @@ class VOUTDecoder:
                                    SCRIPTS[data['s'][4]])
         return VOUTDecoder.return_script(value=Decimal(data['d']['value']),
                                          n=data['n'],
-                                         addresses=[b58_address,],
+                                         addresses=[hex_to_b58check(data['s'][2].encode('utf-8'), 0x00),],
                                          asm=asm,
                                          hex_script=data['d']['script'],
                                          req_sigs=1,
@@ -83,7 +81,7 @@ class VOUTDecoder:
     @classmethod
     def _decode_OPRETURN(cls, data):
         asm = '{} {}'.format(SCRIPTS[data['s'][0]],
-                             data['s'][1])
+                             data['s'][1] if data['s'][1] else '')
         return VOUTDecoder.return_script(value=Decimal("0.0"),
                                          n=data['n'],
                                          asm=asm,
@@ -92,33 +90,36 @@ class VOUTDecoder:
 
     @classmethod
     def _decode_P2SH(cls, data):
-        b58_address = bin_to_b58check(unhexlify(data['s'][1]), 0x05)
         asm = '{} {} {}'.format(SCRIPTS[data['s'][0]],
-                                   data['s'][1],
-                                   SCRIPTS[data['s'][2]])
+                                data['s'][1],
+                                SCRIPTS[data['s'][2]])
         return VOUTDecoder.return_script(value=Decimal(data['d']['value']),
                                          n=data['n'],
-                                         addresses=[b58_address,],
+                                         addresses=[hex_to_b58check(data['s'][1].encode('utf-8'), 0x05),],
                                          asm=asm,
                                          hex_script=data['d']['script'],
                                          req_sigs=1,
                                          script_type='scripthash')
+
     @classmethod
-    def _decode_OP_INT(cls, data):
+    def _decode_CHECKMULTISIG(self, data):
         asm = '{}'.format(SCRIPTS[data['s'][0]])
         addresses = []
-        for i in range(2, len(data['s'])-2):
-            addr = bin_to_b58check(unhexlify(data['s'][i]))
-            asm += ' {} '.format(addr)
-            addresses.append(addr)
-        asm += '{}'.format(SCRIPTS[data['s'][len(data['s'])-1]])
-        return VOUTDecoder.return_script(value=0,
+        howmany = int(SCRIPTS[data['s'][-2]])
+        reqsigs = int(SCRIPTS[data['s'][0]])
+        for i in range(1, howmany+1):
+            if isValidPubKey(data['s'][i]):
+                addresses.append(pubtoaddr(data['s'][i]))
+            asm += ' {}'.format(data['s'][i])
+        asm += ' {} {}'.format(SCRIPTS[data['s'][-2]],
+                              SCRIPTS[data['s'][-1]])
+        return VOUTDecoder.return_script(value=Decimal(data['d']['value']),
                                          n=data['n'],
                                          addresses=addresses,
                                          asm=asm,
-                                         hex_script=data['s'],
-                                         req_sigs=data['s'][0],
-                                         script_type=None) # TODO
+                                         hex_script=data['d']['script'],
+                                         req_sigs=reqsigs if addresses else None,
+                                         script_type="multisig")
 
     @classmethod
     def _decode_PayToPubKey(cls, data):
@@ -126,9 +127,44 @@ class VOUTDecoder:
         asm = '{} {}'.format(data['s'][0],
                              SCRIPTS[data['s'][1]])
         return VOUTDecoder.return_script(value=Decimal(data['d']['value']),
-                                 n=data['n'],
-                                 addresses=[b58_address,],
-                                 asm=asm,
-                                 hex_script=data['d']['script'],
-                                 req_sigs=1,
-                                 script_type='pubkey')
+                                         n=data['n'],
+                                         addresses=[b58_address,],
+                                         asm=asm,
+                                         hex_script=data['d']['script'],
+                                         req_sigs=1,
+                                         script_type='pubkey')
+
+    @classmethod
+    def _decode_OPDATA_nonstandard(cls, data):
+        return VOUTDecoder.return_script(n=data['n'],
+                                         hex_script=data['d']['script'],
+                                         asm=data['s'][0],
+                                         script_type='nonstandard')
+
+    @classmethod
+    def _decode_unknown_script(cls, data):
+        asm = ''
+        fd = False
+        for i, b in enumerate(data['s']):
+            try:
+                asm += SCRIPTS[b] if not fd else int(str(b).encode('utf-8'), 16)
+                fd = (b in [169,] + list(range(1,75)))
+            except:
+                asm += str(b)
+                fd = False
+            if i < len(data['s'])-1: asm += ' '
+        return VOUTDecoder.return_script(value=Decimal(data['d']['value']),
+                                         n=data['n'],
+                                         hex_script=data['d']['script'],
+                                         asm=asm,
+                                         script_type='nonstandard')
+
+def isValidPubKey(pubkey):
+    """
+    https://github.com/bitcoin/bitcoin/blob/master/src/pubkey.h#L48
+    """
+    chHeader =  int(pubkey[:2], 16)
+    if len(pubkey) == 66 and chHeader in (2,3) or \
+        len(pubkey) == 130 and chHeader in (4,6,7):
+        return True
+    return False
