@@ -1,5 +1,3 @@
-__author__ = 'mirko'
-
 class BlockObserver(object):
     def on_block(self, block):
         raise NotImplementedError
