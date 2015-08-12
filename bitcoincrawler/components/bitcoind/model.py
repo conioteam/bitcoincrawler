@@ -7,6 +7,10 @@ class BTCDBlock(Block):
         self.__txs_factory = txs_factory
 
     @property
+    def json(self):
+        return self.__json_obj
+
+    @property
     def hash(self):
         return self.__json_obj.get('hash')
 
@@ -75,6 +79,10 @@ class BTCDTransaction(Transaction):
         self.__json_obj = json_obj
 
     @property
+    def json(self):
+        return self.__json_obj
+
+    @property
     def is_coinbase(self):
         return bool(self.__json_obj.get('vin')[0].get('coinbase'))
 
@@ -107,6 +115,10 @@ class BTCDVin(Vin):
     def __init__(self, json_obj, parent_tx):
         self.__json_obj = json_obj
         self.__parent_tx = parent_tx
+
+    @property
+    def json(self):
+        return self.__json_obj
 
     @property
     def parent(self):
@@ -149,6 +161,10 @@ class BTCDVout(Vout):
     def __init__(self, json_obj, parent_tx):
         self.__json_obj = json_obj
         self.__parent_tx = parent_tx
+
+    @property
+    def json(self):
+        return self.__json_obj
 
     @property
     def parent(self):
