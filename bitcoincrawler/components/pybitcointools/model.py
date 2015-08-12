@@ -1,12 +1,14 @@
 from bitcoincrawler.components.model import Transaction, Vin, Vout
 from bitcoin import deserialize
 from bitcoincrawler.components.pybitcointools.decoders import VOUTDecoder, VINDecoder
+from decimal import Decimal
 
 class PyBitcoinToolsTransaction(Transaction):
-    def __init__(self, hextx, txid, meta=None):
+    def __init__(self, hextx, txid, network="main", meta=None):
         self._hex = hextx
         self._txid = txid
         self.__json_obj = None
+        self.__network = network
         meta = meta if meta else dict()
         self.__parent_block = meta.get('parent_block')
 
@@ -58,7 +60,7 @@ class PyBitcoinToolsTransaction(Transaction):
         self._deserialize()
         i = 0
         for vout in self.__json_obj.get('outs'):
-            yield PyBitcoinToolsVout(vout, i, self.txid)
+            yield PyBitcoinToolsVout(vout, i, self.__network, self.txid)
             i += 1
 
     @property
@@ -94,12 +96,13 @@ class PyBitcoinToolsVin(Vin):
             @property
             def hex(self):
                 self.up._deserialize()
-                try: return self.up._json_obj.get('scriptSig').get('hex')
+                try: return self.up.json.get('scriptSig').get('hex')
                 except AttributeError: return None
 
             @property
             def asm(self):
-                try: return self.up._json_obj.get('scriptSig').get('asm')
+                self.up._deserialize()
+                try: return self.up.json.get('scriptSig').get('asm')
                 except AttributeError: return None
 
         return ScriptSig(self)
@@ -125,10 +128,11 @@ class PyBitcoinToolsVin(Vin):
         return self.__json_obj.get('coinbase')
 
 class PyBitcoinToolsVout(Vout):
-    def __init__(self, vout, n, parent_tx):
+    def __init__(self, vout, n, network, parent_tx):
         self.__json_obj = None
         self._vout = vout
         self._n = n
+        self.__network = network
         self.__parent_tx = parent_tx
 
     @property
@@ -142,12 +146,12 @@ class PyBitcoinToolsVout(Vout):
 
     def _deserialize(self):
         if not self.__json_obj:
-            self.__json_obj = VOUTDecoder.decode(self._vout, self._n)
+            self.__json_obj = VOUTDecoder.decode(self._vout, self._n, self.__network)
 
     @property
     def value(self):
         self._deserialize()
-        return '{0:.8f}'.format(self.__json_obj.get('value'))
+        return Decimal('{0:.8f}'.format(self.__json_obj.get('value')))
 
     @property
     def n(self):

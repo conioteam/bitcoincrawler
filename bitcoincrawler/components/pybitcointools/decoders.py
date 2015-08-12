@@ -37,7 +37,7 @@ class VOUTDecoder:
     """
     @classmethod
     def __return_script(cls,
-                      value='0.00000000',
+                      value=Decimal('0.00000000'),
                       n=None,
                       asm=None,
                       hex_script=None,
@@ -56,8 +56,10 @@ class VOUTDecoder:
         return r
 
     @classmethod
-    def decode(cls, vout, n):
+    def decode(cls, vout, n, network):
         hex_script = vout['script']
+        prefix = {'pub': 0x00 if network == "main" else 0x6F,
+                  'p2sh': 0x05 if network == "main" else 0xC4}
         script = [0 if x == None else x for x in deserialize_script(hex_script)]
         if len(script) == 5 and script[0] == 118 and script[1] == 169 and isinstance(script[2], str):
             decoder = VOUTDecoder._decode_PayToPubKeyHash
@@ -74,7 +76,8 @@ class VOUTDecoder:
 
         return decoder({'d': vout,
                         'n': n,
-                        's': script})
+                        's': script,
+                        'p': prefix})
 
     @classmethod
     def _decode_PayToPubKeyHash(cls, data):
@@ -85,7 +88,7 @@ class VOUTDecoder:
                                    SCRIPTS[data['s'][4]])
         return VOUTDecoder.__return_script(value='{0:.8f}'.format(Decimal(data['d']['value'])),
                                          n=data['n'],
-                                         addresses=[hex_to_b58check(data['s'][2].encode('utf-8'), 0x00),],
+                                         addresses=[hex_to_b58check(data['s'][2].encode('utf-8'), data['p']['pub']),],
                                          asm=asm,
                                          hex_script=data['d']['script'],
                                          req_sigs=1,
@@ -108,7 +111,7 @@ class VOUTDecoder:
                                 SCRIPTS[data['s'][2]])
         return VOUTDecoder.__return_script(value='{0:.8f}'.format(Decimal(data['d']['value'])),
                                          n=data['n'],
-                                         addresses=[hex_to_b58check(data['s'][1].encode('utf-8'), 0x05),],
+                                         addresses=[hex_to_b58check(data['s'][1].encode('utf-8'), data['p']['p2sh']),],
                                          asm=asm,
                                          hex_script=data['d']['script'],
                                          req_sigs=1,

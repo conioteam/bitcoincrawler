@@ -6,7 +6,7 @@ import asyncio
 class PyBitcoinToolsFactory(BitcoindFactory):
     """
     Extension of bitcoind component, use local parser instead of decoderawtransaction.
-    Looks faster but it's _HIGHLY EXPERIMENTAL__.
+    Looks faster and surely consume less network resources, but it's _HIGHLY EXPERIMENTAL__.
     """
     def __init__(self, bitcoind_cli, async=False):
         super(PyBitcoinToolsFactory, self).__init__(bitcoind_cli, async=async)
@@ -21,6 +21,7 @@ class PyBitcoinToolsFactory(BitcoindFactory):
                          lambda txid: self.btcd.get_raw_transaction(txid, async=True),
                          asyncio.coroutine(lambda rawtx: PyBitcoinToolsTransaction(rawtx.get('result'),
                                                                                    txid,
+                                                                                   network=self.network,
                                                                                    meta=meta)))
         else:
             return PyBitcoinToolsTransaction(self.btcd.get_raw_transaction(txid).get('result'),

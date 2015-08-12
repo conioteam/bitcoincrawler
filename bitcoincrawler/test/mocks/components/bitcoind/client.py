@@ -31,7 +31,6 @@ def decode_raw_transaction(rawtx, async=False):
     def openfile(rawtx):
         name = (md5(rawtx.encode('utf-8')).hexdigest())
         with open(PREFIX + 'cli_files/transactions/{}.json'.format(name)) as outfile:
-            print(outfile)
             return {"result": json.load(outfile, parse_float=Decimal)}
     if async:
         return coroutine(lambda: openfile(rawtx))()

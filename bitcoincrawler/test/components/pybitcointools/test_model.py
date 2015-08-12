@@ -129,7 +129,7 @@ class TestBTCDVout(TestCase):
         self.parent_tx = Mock()
 
     def test_Vout(self):
-        self.sut = PyBitcoinToolsVout(self.pybtcd_vout_obj, 0, self.parent_tx)
+        self.sut = PyBitcoinToolsVout(self.pybtcd_vout_obj, 0, "main", self.parent_tx)
         vout = json.loads(json.dumps(self.btcd_vout_obj), parse_float=Decimal)
         self.assertEqual(self.sut.parent, self.parent_tx)
         self.assertEqual(self.sut.value, vout['value'])
@@ -139,4 +139,3 @@ class TestBTCDVout(TestCase):
         self.assertEqual(self.sut.scriptPubKey.reqSigs, vout['scriptPubKey']['reqSigs'])
         self.assertEqual(self.sut.scriptPubKey.hex, vout['scriptPubKey']['hex'])
         self.assertEqual(self.sut.scriptPubKey.asm, vout['scriptPubKey']['asm'])
-

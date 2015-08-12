@@ -13,6 +13,7 @@ class BitcoindFactory(BaseFactory):
         """
         self.btcd = bitcoind_cli
         self.async = async
+        self.network = bitcoind_cli.network
 
     def get_mempool_transactions(self, limit=None):
         mempool = self.btcd.get_raw_mempool().get('result')

@@ -78,7 +78,7 @@ class TestVOUTDecoder(TestCase):
                                          ]}
                                      }
 
-        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0)
+        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
         self.assertEqual(vout, sut)
 
@@ -103,7 +103,7 @@ class TestVOUTDecoder(TestCase):
                                    ]
                                }
                            }
-        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0)
+        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
         self.assertEqual(vout, sut)
 
@@ -128,7 +128,7 @@ class TestVOUTDecoder(TestCase):
                                    ]
                                }
                            }
-        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0)
+        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
         self.assertEqual(vout, sut)
 
@@ -154,7 +154,7 @@ class TestVOUTDecoder(TestCase):
                                         "type" : "nulldata"
                                     }
                                 }
-        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0)
+        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
         self.assertEqual(vout, sut)
 
@@ -185,7 +185,7 @@ class TestVOUTDecoder(TestCase):
                                         ]
                                     }
                                 }
-        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0)
+        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
         self.assertEqual(vout, sut)
 
@@ -226,7 +226,7 @@ class TestVOUTDecoder(TestCase):
                                    ]
                                }
                            }
-        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0)
+        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
         self.assertEqual(sut, vout)
 
@@ -251,7 +251,7 @@ class TestVOUTDecoder(TestCase):
                                        ]
                                    }
                                }
-            sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0)
+            sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
             vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
             self.assertEqual(sut, vout)
 
@@ -284,7 +284,7 @@ class TestVOUTDecoder(TestCase):
                                    "type" : "nonstandard"
                                }
                            }
-        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0)
+        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
         self.assertEqual(sut, vout)
 
@@ -312,6 +312,6 @@ class TestVOUTDecoder(TestCase):
                                     "type" : "nonstandard"
                                 }
                             }
-        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0)
+        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
         self.assertEqual(sut, vout)
