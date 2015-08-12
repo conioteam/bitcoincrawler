@@ -1,22 +1,23 @@
 from bitcoincrawler.components.model import Transaction, Vin, Vout
 from bitcoin import deserialize
 from bitcoincrawler.components.pybitcointools.decoders import VOUTDecoder, VINDecoder
-try:
-    from bitcoin.py2specials import bin_to_b58check
-except:
-    from bitcoin.py3specials import bin_to_b58check
-
 
 class PyBitcoinToolsTransaction(Transaction):
-    def __init__(self, hextx, txid, in_block=None):
+    def __init__(self, hextx, txid, meta=None):
         self._hex = hextx
         self._txid = txid
-        self.json = None
-        self._in_block = in_block
+        self.json_obj = None
+        meta = meta if meta else dict()
+        self.__parent_block = meta.get('parent_block')
 
     def _deserialize(self):
-        if not self.json:
-            self.json = deserialize(self._hex)
+        if not self.json_obj:
+            self.json_obj = deserialize(self._hex)
+
+    @property
+    def is_coinbase(self):
+        self._deserialize()
+        return bool(VINDecoder.decode(self.json_obj.get('ins')[0]).get('coinbase'))
 
     @property
     def txid(self):
@@ -25,38 +26,43 @@ class PyBitcoinToolsTransaction(Transaction):
     @property
     def version(self):
         self._deserialize()
-        return self.json.get('version')
+        return self.json_obj.get('version')
 
     @property
     def locktime(self):
         self._deserialize()
-        return self.json.get('locktime')
+        return self.json_obj.get('locktime')
 
     @property
     def vin(self):
         self._deserialize()
-        return (PyBitcoinToolsVin(vin) for vin in self.json.get('ins'))
+        return (PyBitcoinToolsVin(vin, self.txid) for vin in self.json_obj.get('ins'))
 
     @property
     def vout(self):
         self._deserialize()
         i = 0
-        for vout in self.json.get('outs'):
-            yield PyBitcoinToolsVout(vout, i)
+        for vout in self.json_obj.get('outs'):
+            yield PyBitcoinToolsVout(vout, i, self.txid)
             i += 1
 
     @property
-    def in_block(self):
-        return self._in_block
+    def parent(self):
+        return self.__parent_block
 
 class PyBitcoinToolsVin(Vin):
-    def __init__(self, vin):
-        self.json_obj = None
+    def __init__(self, vin, parent_tx):
+        self._json_obj = None
         self._vin = vin
+        self.__parent_tx = parent_tx
+
+    @property
+    def parent(self):
+        return self.__parent_tx
 
     def _deserialize(self):
-        if not self.json:
-            self.json = VINDecoder.decode(self._vin)
+        if not self._json_obj:
+            self._json_obj = VINDecoder.decode(self._vin)
 
     @property
     def scriptSig(self):
@@ -64,41 +70,50 @@ class PyBitcoinToolsVin(Vin):
         class ScriptSig:
             def __init__(self, up):
                 self.up = up
-                self.up._deserialize()
 
             @property
             def hex(self):
-                try: return self.up.get('scriptSig').get('hex')
+                self.up._deserialize()
+                try: return self.up._json_obj.get('scriptSig').get('hex')
                 except AttributeError: return None
 
             @property
             def asm(self):
-                try: return self.up.get('scriptSig').get('asm')
+                try: return self.up._json_obj.get('scriptSig').get('asm')
                 except AttributeError: return None
 
         return ScriptSig(self)
 
     @property
     def sequence(self):
-        return self.json_obj.get('sequence')
+        self._deserialize()
+        return self._json_obj.get('sequence')
 
     @property
     def vout(self):
-        return self.json_obj.get('vout')
+        self._deserialize()
+        return self._json_obj.get('vout')
 
     @property
     def txid(self):
-        return self.json_obj.get('txid')
+        self._deserialize()
+        return self._json_obj.get('txid')
 
     @property
     def coinbase(self):
-        return self.json_obj.get('coinbase')
+        self._deserialize()
+        return self._json_obj.get('coinbase')
 
 class PyBitcoinToolsVout(Vout):
-    def __init__(self, vout, n):
+    def __init__(self, vout, n, parent_tx):
         self.json = None
         self._vout = vout
         self._n = n
+        self.__parent_tx = parent_tx
+
+    @property
+    def parent(self):
+        return self.__parent_tx
 
     def _deserialize(self):
         if not self.json:
@@ -106,10 +121,12 @@ class PyBitcoinToolsVout(Vout):
 
     @property
     def value(self):
+        self._deserialize()
         return self.json.get('value')
 
     @property
     def n(self):
+        self._deserialize()
         return self.json.get('n')
 
     @property

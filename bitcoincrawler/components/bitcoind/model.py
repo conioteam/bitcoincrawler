@@ -71,8 +71,8 @@ class BTCDTransaction(Transaction):
         Be strict.
         """
         meta = meta if meta else dict()
-        self.__json_obj = json_obj
         self.__parent_block = meta.get('parent_block')
+        self.__json_obj = json_obj
 
     @property
     def is_coinbase(self):

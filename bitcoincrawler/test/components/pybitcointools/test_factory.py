@@ -1,14 +1,14 @@
 from unittest import TestCase
-from bitcoincrawler.components.bitcoind.factory import BitcoindFactory
-from bitcoincrawler.components.bitcoind.model import BTCDTransaction, BTCDBlock, BTCDVin, BTCDVout
+from bitcoincrawler.components.pybitcointools.factory import PyBitcoinToolsFactory, PyBitcoinToolsTransaction
+from bitcoincrawler.components.bitcoind.model import BTCDBlock
 from types import GeneratorType
 
 from mock import Mock
 
-class TestBitcoindFactory(TestCase):
+class TestPyBitcoinToolsFactory(TestCase):
     def setUp(self):
         self.btcd = Mock()
-        self.sut = BitcoindFactory(self.btcd)
+        self.sut = PyBitcoinToolsFactory(self.btcd)
 
     def tearDown(self):
         self.btcd.reset_mock()
@@ -21,7 +21,7 @@ class TestBitcoindFactory(TestCase):
         self.assertIsInstance(r, GeneratorType)
         self.btcd.get_raw_mempool.assert_called_once_with()
         for i, x in enumerate(r):
-            self.assertIsInstance(x, BTCDTransaction)
+            self.assertIsInstance(x, PyBitcoinToolsTransaction)
         self.assertEqual(i+1, limit)
 
     def test_get_transactions(self):
@@ -29,17 +29,13 @@ class TestBitcoindFactory(TestCase):
         get_raw_transactions_response = [{"result": "rawtx1"},
                                          {"result": "rawtx2"},
                                          {"result": "rawtx3"}]
-        decode_raw_transactions_response = [{"result": {"txid": "hash1"}},
-                                            {"result": {"txid": "hash2"}},
-                                            {"result": {"txid": "hash3"}}]
         i = 0
         self.btcd.get_raw_transaction.side_effect = get_raw_transactions_response
-        self.btcd.decode_raw_transaction.side_effect = decode_raw_transactions_response
         r = self.sut.get_transactions(request)
         self.assertIsInstance(r, GeneratorType)
         for i, x in enumerate(r):
-            self.assertIsInstance(x, BTCDTransaction)
-            self.assertEqual(x.txid, decode_raw_transactions_response[i]['result']['txid'])
+            self.assertIsInstance(x, PyBitcoinToolsTransaction)
+            self.assertEqual(x.txid, request[i])
         self.assertEqual(i+1, len(request))
 
     def test_generate_blocks_from_height_explicit_stop_with_limit(self):
@@ -101,9 +97,9 @@ class TestBitcoindFactory(TestCase):
                                    {"result": "block_hash_3"}]
         get_block_response = [{"result": {'nextblockhash': 'block_hash_2',
                                'hash': 'block_hash_1'}},
-                              {"result": {'nextblockhash': 'block_hash_3',
+                              {"result":{'nextblockhash': 'block_hash_3',
                                'hash': 'block_hash_2'}},
-                              {"result": {'nextblockhash': None,
+                              {"result":{'nextblockhash': None,
                                'hash': 'block_hash_3'}}]
         self.btcd.get_block_hash.side_effect = get_block_hash_response
         self.btcd.get_block.side_effect = get_block_response

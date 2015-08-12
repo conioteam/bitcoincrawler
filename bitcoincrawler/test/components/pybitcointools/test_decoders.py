@@ -31,6 +31,7 @@ class TestVINDecoder(TestCase):
                           }
         sut = VINDecoder.decode(pybtcd_deserialized_transaction['ins'][0])
         vin = json.loads(json.dumps(bitcoind_json_vin0), parse_float=Decimal)
+
         self.assertEqual(vin, sut)
 
     def test_Vin_coinbase(self):
