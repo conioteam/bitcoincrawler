@@ -89,7 +89,7 @@ class VOUTDecoder:
                                        data['s'][2],
                                        SCRIPTS[data['s'][3]],
                                        SCRIPTS[data['s'][4]])
-            return VOUTDecoder.__return_script(value='{0:.8f}'.format(Decimal(data['d']['value'])),
+            return VOUTDecoder.__return_script(value=Decimal('{0:.8f}'.format(data['d']['value'])),
                                              n=data['n'],
                                              addresses=[hex_to_b58check(data['s'][2].encode('utf-8'), data['p']['pub']),],
                                              asm=asm,
@@ -102,9 +102,12 @@ class VOUTDecoder:
     @classmethod
     def _decode_OPRETURN(cls, data):
         try:
-            asm = '{} {}'.format(SCRIPTS[data['s'][0]],
-                                 data['s'][1] if data['s'][1] else '')
-            return VOUTDecoder.__return_script(value=Decimal("0.0"),
+            asm = '{}'.format(SCRIPTS[data['s'][0]])
+            if len(data['s']) == 2:
+                asm += ' {}'.format(data['s'][1])
+            elif len(data['s']) > 2:
+                return VOUTDecoder._decode_nonstandard(data)
+            return VOUTDecoder.__return_script(value=Decimal('0.0'),
                                              n=data['n'],
                                              asm=asm,
                                              hex_script=data['d']['script'],
@@ -118,7 +121,7 @@ class VOUTDecoder:
             asm = '{} {} {}'.format(SCRIPTS[data['s'][0]],
                                     data['s'][1],
                                     SCRIPTS[data['s'][2]])
-            return VOUTDecoder.__return_script(value='{0:.8f}'.format(Decimal(data['d']['value'])),
+            return VOUTDecoder.__return_script(value=Decimal('{0:.8f}'.format((data['d']['value']))),
                                              n=data['n'],
                                              addresses=[hex_to_b58check(data['s'][1].encode('utf-8'), data['p']['p2sh']),],
                                              asm=asm,
@@ -141,7 +144,7 @@ class VOUTDecoder:
                 asm += ' {}'.format(data['s'][i])
             asm += ' {} {}'.format(SCRIPTS[data['s'][-2]],
                                   SCRIPTS[data['s'][-1]])
-            return VOUTDecoder.__return_script(value='{0:.8f}'.format(Decimal(data['d']['value'])),
+            return VOUTDecoder.__return_script(value=Decimal('{0:.8f}'.format(data['d']['value'])),
                                              n=data['n'],
                                              addresses=addresses,
                                              asm=asm,
@@ -157,7 +160,7 @@ class VOUTDecoder:
             b58_address = pubtoaddr(data['s'][0], 0x00)
             asm = '{} {}'.format(data['s'][0],
                                  SCRIPTS[data['s'][1]])
-            return VOUTDecoder.__return_script(value='{0:.8f}'.format(Decimal(data['d']['value'])),
+            return VOUTDecoder.__return_script(value=Decimal('{0:.8f}'.format(data['d']['value'])),
                                              n=data['n'],
                                              addresses=[b58_address,],
                                              asm=asm,
@@ -179,7 +182,7 @@ class VOUTDecoder:
                 asm += str(b)
                 fd = False
             if i < len(data['s'])-1: asm += ' '
-        return VOUTDecoder.__return_script(value='{0:.8f}'.format(Decimal(data['d']['value'])),
+        return VOUTDecoder.__return_script(value=Decimal('{0:.8f}'.format(data['d']['value'])),
                                          n=data['n'],
                                          hex_script=data['d']['script'],
                                          asm=asm,

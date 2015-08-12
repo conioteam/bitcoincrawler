@@ -133,9 +133,9 @@ class TestVOUTDecoder(TestCase):
         self.assertEqual(vout, sut)
 
 
-    def test__decode_OPRETURN(self):
+    def test__decode_OPRETURN_data(self):
         """
-        OP_RETURN
+        OP_RETURN OP_DATA
         """
         rawtransaction = "0100000001c858ba5f607d762fe5be1dfe97ddc121827895c2562c4348d69d02b91dbb408e0100000" \
                          "08b4830450220446df4e6b875af246800c8c976de7cd6d7d95016c4a8f7bcdbba81679cbda2420221" \
@@ -157,6 +157,9 @@ class TestVOUTDecoder(TestCase):
         sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
         self.assertEqual(vout, sut)
+
+    def test__decode_OPRETURN(self):
+        pass
 
     def test__decode_P2SH(self):
         """
