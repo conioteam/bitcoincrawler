@@ -16,7 +16,18 @@ class PyBitcoinToolsTransaction(Transaction):
 
     @property
     def json(self):
-        return self.__json_obj
+        self._deserialize()
+        decoderawtransaction = {"txid" : self.txid,
+                                "version" : self.__json_obj.get('version'),
+			                    "locktime" : self.__json_obj.get('locktime'),
+			                    "vin" : [],
+			                    "vout" : []
+			                    }
+        for vin in self.vin:
+            decoderawtransaction['vin'].append(vin.json)
+        for vout in self.vout:
+            decoderawtransaction['vout'].append(vout.json)
+        return decoderawtransaction
 
     @property
     def is_coinbase(self):
@@ -62,6 +73,7 @@ class PyBitcoinToolsVin(Vin):
 
     @property
     def json(self):
+        self._deserialize()
         return self.__json_obj
 
     @property
@@ -135,7 +147,7 @@ class PyBitcoinToolsVout(Vout):
     @property
     def value(self):
         self._deserialize()
-        return self.__json_obj.get('value')
+        return '{0:.8f}'.format(self.__json_obj.get('value'))
 
     @property
     def n(self):
