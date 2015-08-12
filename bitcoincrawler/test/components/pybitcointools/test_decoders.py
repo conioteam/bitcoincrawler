@@ -5,11 +5,47 @@ import json
 from decimal import Decimal
 
 class TestVINDecoder(TestCase):
-    def test_Vin_coinbase(self):
-        pass
-
     def test_Vin(self):
-        pass
+        rawtransaction = "01000000031091bb34c19754b689685bd5f84078b437653d08377d2d03d256b34f80eb219e010000008a4730440" \
+                         "220476c26cdcecccf46fdd96fb87814661cb1044e103d1bcd5be339b9cbaceca47902201b2caafe5b36913ef475" \
+                         "d4d33b9d62aa3316ece6f1ac3371a506906e61afd4510141048c632401521a105db6b62db0a2c393181b5538f2c" \
+                         "56d461057611252baebc9c7794378c252c45b7393fc93ea3b8bc6d6db1c9b5506744d51d1ddd7a9acd27d81ffff" \
+                         "ffffcc72f7a8acf77c1b1313d4ba229bff7db4f40e0a1b525a9b8a4dbc8ecc80b070000000008b4830450221009" \
+                         "97b74ef85d3be61a96a4d8ecebfeb588979364276f54fa77571ff8fb7906e4202204390f9935695194362fbc221" \
+                         "b00436b4811d01f645715105f9d081ad65977e2b014104fd579aa4983cece29365038ddbaf479af86bdf25afdca" \
+                         "e67bbe8b30c268aecdac6cd8f923ef3f23ab694783f9243522f67886a46a43499e3fb3ed49623869d6fffffffff" \
+                         "8ecdae566b8e8d709a32054175ce61fc2a9323e60023f62b23c342a7186beeea000000008b48304502200f95d4c" \
+                         "d51bb5b867563700979ea23bf69921b1a0262ff5de3d7330bb992a713022100de58fa5822e7e62c8e6e4edbdece" \
+                         "7913cb21f5a7b5a39d85fa9291874ce81a710141045f7f6eed56863bf527b8fd30cbe78038db311370da6c7054b" \
+                         "eced527d60f47a65d6f1ce62278ba496f5da4a3d738eac0e2cb0f4ac38b113cbeabef59b685b16cffffffff0280" \
+                         "c51b11010000000576a90088ac4cbdd397a90000001976a914d1121a58483d135c953e0f4e2cc6d126b5c6b0638" \
+                         "8ac00000000"
+        pybtcd_deserialized_transaction = deserialize(rawtransaction)
+        bitcoind_json_vin0 = {"txid" : "9e21eb804fb356d2032d7d37083d6537b47840f8d55b6889b65497c134bb9110",
+                              "vout" : 1,
+                              "scriptSig" : {
+                                  "asm" : "30440220476c26cdcecccf46fdd96fb87814661cb1044e103d1bcd5be339b9cbaceca47902201b2caafe5b36913ef475d4d33b9d62aa3316ece6f1ac3371a506906e61afd45101 048c632401521a105db6b62db0a2c393181b5538f2c56d461057611252baebc9c7794378c252c45b7393fc93ea3b8bc6d6db1c9b5506744d51d1ddd7a9acd27d81",
+                                  "hex" : "4730440220476c26cdcecccf46fdd96fb87814661cb1044e103d1bcd5be339b9cbaceca47902201b2caafe5b36913ef475d4d33b9d62aa3316ece6f1ac3371a506906e61afd4510141048c632401521a105db6b62db0a2c393181b5538f2c56d461057611252baebc9c7794378c252c45b7393fc93ea3b8bc6d6db1c9b5506744d51d1ddd7a9acd27d81"
+                              },
+                              "sequence" : 4294967295
+                          }
+        sut = VINDecoder.decode(pybtcd_deserialized_transaction['ins'][0])
+        vin = json.loads(json.dumps(bitcoind_json_vin0), parse_float=Decimal)
+        self.assertEqual(vin, sut)
+
+    def test_Vin_coinbase(self):
+        rawtransaction = "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff320" \
+                         "380a305254b6e434d696e6572422d50322f4256383030303030302fbf2cf98be334867355cb0d80087e7f" \
+                         "04000049e12b00ffffffff02fcde0600000000001976a9148c1fe3d123c397d6ed6b53e82069c0d68cabe" \
+                         "cb588ac0c492e95000000001976a914396652927daedcef95e1fb89a09faf09545c322588ac00000000"
+        pybtcd_deserialized_transaction = deserialize(rawtransaction)
+        bitcoind_json_vin0 = {
+            "coinbase" : "0380a305254b6e434d696e6572422d50322f4256383030303030302fbf2cf98be334867355cb0d80087e7f04000049e12b00",
+            "sequence" : 4294967295
+        }
+        sut = VINDecoder.decode(pybtcd_deserialized_transaction['ins'][0])
+        vin = json.loads(json.dumps(bitcoind_json_vin0), parse_float=Decimal)
+        self.assertEqual(vin, sut)
 
 class TestVOUTDecoder(TestCase):
     def test__decode_PayToPubKeyHash(self):
@@ -277,6 +313,4 @@ class TestVOUTDecoder(TestCase):
                             }
         sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0)
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
-        print(sut)
-        print(vout)
         self.assertEqual(sut, vout)
