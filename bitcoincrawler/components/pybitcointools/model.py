@@ -121,6 +121,7 @@ class PyBitcoinToolsVout(Vout):
 
     @property
     def json(self):
+        self._deserialize()
         return self.__json_obj
 
     @property
