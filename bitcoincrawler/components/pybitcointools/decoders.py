@@ -17,7 +17,7 @@ class VINDecoder:
 
     @classmethod
     def _decode_script(cls, vin):
-        ds = deserialize_script(vin['script'])
+        ds = [0 if x == None else x for x in deserialize_script(vin['script'])]
         asm = ''
         for i, x in enumerate(ds):
             asm += '{}'.format(x)
