@@ -428,30 +428,37 @@ class TestVOUTDecoder(TestCase):
         """
         6d36bc17e947ce00bb6f12f8e7a56a1585c5a36188ffa2b05e10b4743273a74b
         """
-        rawtransaction = "010000000237b17d763851cd1ab04a424463d413c4ee5cf61304c7fd76977bea7fce075705000000006a4730440" \
-                         "22002dbe4b5a2fbb521e4dc5fbec75fd960651a2754b03d0871b8c965469be50fa702206d97421fb7ea9359b63e" \
-                         "48c2108223284b9a71560bd8182469b9039228d7b3d701210295bf727111acdeab8778284f02b768d1e21acbcba" \
-                         "e42090cc49aaa3cc6d19cdaffffffff37b17d763851cd1ab04a424463d413c4ee5cf61304c7fd76977bea7fce07" \
-                         "57050100000070004830450220106a3e4ef0b51b764a28872262ffef55846514dacbdcbbdd652c849d395b43840" \
-                         "22100e03ae554c3cbb40600d31dd46fc33f25e47bf8525b1fe07282e3b6ecb5f3bb2801ab51210232abdc893e7f" \
-                         "0631364d7fd01cb33d24da45329a00357b3a7886211ab414d55a51aeffffffff01003e4900000000001976a9140" \
-                         "d7713649f9a0678f4e880b40f86b93289d1bb2788ac00000000"
+        rawtransaction = "01000000024de8b0c4c2582db95fa6b3567a989b664484c7ad6672c85a3da413773e63fdb8000000006b483045" \
+                         "02205b282fbc9b064f3bc823a23edcc0048cbb174754e7aa742e3c9f483ebe02911c022100e4b0b3a117d36cab" \
+                         "5a67404dddbf43db7bea3c1530e0fe128ebc15621bd69a3b0121035aa98d5f77cd9a2d88710e6fc66212aff820" \
+                         "026f0dad8f32d1f7ce87457dde50ffffffff4de8b0c4c2582db95fa6b3567a989b664484c7ad6672c85a3da413" \
+                         "773e63fdb8010000006f004730440220276d6dad3defa37b5f81add3992d510d2f44a317fd85e04f93a1e2daea" \
+                         "64660202200f862a0da684249322ceb8ed842fb8c859c0cb94c81e1c5308b4868157a428ee01ab51210232abdc" \
+                         "893e7f0631364d7fd01cb33d24da45329a00357b3a7886211ab414d55a51aeffffffff02e0fd1c000000000019" \
+                         "76a914380cb3c594de4e7e9b8e18db182987bebb5a4f7088acc0c62d000000000017142a9bc5447d664c1d0141" \
+                         "392a842d23dba45c4f13b17500000000"
         pybtcd_deserialized_transaction = deserialize(rawtransaction)
         bitcoind_json_vout0 = {
-            "value" : 0.04800000,
-            "n" : 0,
+            "value" : 0.03000000,
+            "n" : 1,
             "scriptPubKey" : {
-                "asm" : "OP_DUP OP_HASH160 0d7713649f9a0678f4e880b40f86b93289d1bb27 OP_EQUALVERIFY OP_CHECKSIG",
-                "hex" : "76a9140d7713649f9a0678f4e880b40f86b93289d1bb2788ac",
-                "reqSigs" : 1,
-                "type" : "pubkeyhash",
-                "addresses" : [
-                    "12ECS2HotU1DmMfBZNArok4RdvbBfxFfcA"
-                ]
+                "asm" : "2a9bc5447d664c1d0141392a842d23dba45c4f13 OP_NOP2 OP_DROP",
+                "hex" : "142a9bc5447d664c1d0141392a842d23dba45c4f13b175",
+                "type" : "nonstandard"
             }
         }
-        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
+        bitcoind_json_vin1 = {
+            "txid" : "b8fd633e7713a43d5ac87266adc78444669b987a56b3a65fb92d58c2c4b0e84d",
+            "vout" : 1,
+            "scriptSig" : {
+                "asm" : "0 30440220276d6dad3defa37b5f81add3992d510d2f44a317fd85e04f93a1e2daea64660202200f862a0da684249322ceb8ed842fb8c859c0cb94c81e1c5308b4868157a428ee01 OP_CODESEPARATOR 1 0232abdc893e7f0631364d7fd01cb33d24da45329a00357b3a7886211ab414d55a 1 OP_CHECKMULTISIG",
+                "hex" : "004730440220276d6dad3defa37b5f81add3992d510d2f44a317fd85e04f93a1e2daea64660202200f862a0da684249322ceb8ed842fb8c859c0cb94c81e1c5308b4868157a428ee01ab51210232abdc893e7f0631364d7fd01cb33d24da45329a00357b3a7886211ab414d55a51ae"
+            },
+            "sequence" : 4294967295
+        }
+        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][1], 1, "main")
+        sut_in = VINDecoder.decode(pybtcd_deserialized_transaction['ins'][1])
+        vin = json.loads(json.dumps(bitcoind_json_vin1), parse_float=Decimal)
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
-        print(sut)
-        print(vout)
         self.assertEqual(sut, vout)
+        self.assertEqual(sut_in, vin)
