@@ -155,7 +155,7 @@ class VOUTDecoder:
                                   SCRIPTS[data['s'][-1]])
             return VOUTDecoder.__return_script(value=Decimal('{}'.format(data['d']['value'])),
                                              n=data['n'],
-                                             addresses=addresses,
+                                             addresses=addresses if addresses else None,
                                              asm=asm,
                                              hex_script=data['hs'],
                                              req_sigs=reqsigs if addresses else None,
@@ -165,18 +165,20 @@ class VOUTDecoder:
 
     @classmethod
     def _decode_PayToPubKey(cls, data):
+        addresses = []
         try:
             if len(data['s']) != 2:
                 return VOUTDecoder._decode_nonstandard(data)
-            b58_address = pubtoaddr(data['s'][0].encode('utf-8'), 0x00)
+            if isValidPubKey(data['s'][0]):
+                addresses.append(pubtoaddr(data['s'][0].encode('utf-8'), 0x00))
             asm = '{} {}'.format(data['s'][0],
                                  SCRIPTS[data['s'][1]])
             return VOUTDecoder.__return_script(value=Decimal('{}'.format(data['d']['value'])),
                                              n=data['n'],
-                                             addresses=[b58_address,],
+                                             addresses=addresses if addresses else None,
                                              asm=asm,
                                              hex_script=data['hs'],
-                                             req_sigs=1,
+                                             req_sigs=1 if addresses else None,
                                              script_type='pubkey')
         except AttributeError:
             return VOUTDecoder._decode_nonstandard(data)
