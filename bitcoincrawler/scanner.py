@@ -66,9 +66,7 @@ class BitcoinScanner:
         notify_block = lambda: len(self.blocks_observers) > 0 or notify_tx
 
         if notify_block:
-            print('....')
             for cur_block in self.blocks_generator:
-                print('yo')
                 self._notify_block(cur_block)
                 if notify_tx:
                     for tx in cur_block.tx:
