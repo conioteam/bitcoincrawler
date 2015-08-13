@@ -59,7 +59,7 @@ class VOUTDecoder:
 
     @classmethod
     def decode(cls, vout, n, network):
-        hex_script = cleanScript(vout['script'])
+        hex_script = vout['script']
         script = [0 if x == None else x for x in deserialize_script(hex_script)]
         data = {'hs': hex_script,
                 'd': vout,
@@ -209,13 +209,3 @@ def isValidPubKey(pubkey):
         len(pubkey) == 130 and chHeader in (4,6,7):
         return True
     return False
-
-def cleanScript(script):
-    """
-    # TODO Document which bitcoincore function remove OP_FALSE if are last bytes of scriptPubKey
-    # This happens from transaction e411dbebd2f7d64dafeef9b14b5c59ec60c36779d43f850e5e347abee1e1a455
-    #
-    """
-    while script[-2:] == '00':
-       script = script[:-2]
-    return script

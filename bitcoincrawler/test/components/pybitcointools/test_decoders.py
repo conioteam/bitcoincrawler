@@ -329,14 +329,14 @@ class TestVOUTDecoder(TestCase):
                          "39190435cffd15af7cb70c33b82027deba06e6d5441eb401c0f8f92d4ffe6038d283d2b2dd59c4384b66b7b8f" \
                          "038a7cf5ffffffff0200093d0000000000434104636d69f81d685f6f58054e17ac34d16db869bba8b3562aabc" \
                          "38c35b065158d360f087ef7bd8b0bcbd1be9a846a8ed339bf0131cdb354074244b0a9736beeb2b9ac40420f00" \
-                         "00000000fdba0f76a9144838a081d73cf134e8ff9cfd4015406c73beceb388"+ ("ac"*42) + "00000000"
+                         "00000000fdba0f76a9144838a081d73cf134e8ff9cfd4015406c73beceb388"+ ("ac"*4002) + "00000000"
         pybtcd_deserialized_transaction = deserialize(rawtransaction)
         bitcoind_json_vout0 = {
                                    "value" : 0.01000000,
                                    "n" : 1,
                                    "scriptPubKey" : {
-                                       "asm" : "OP_DUP OP_HASH160 4838a081d73cf134e8ff9cfd4015406c73beceb3 OP_EQUALVERIFY" + (" OP_CHECKSIG"*42),
-                                       "hex" : "76a9144838a081d73cf134e8ff9cfd4015406c73beceb388" + ("ac"*42),
+                                       "asm" : "OP_DUP OP_HASH160 4838a081d73cf134e8ff9cfd4015406c73beceb3 OP_EQUALVERIFY" + (" OP_CHECKSIG"*4002),
+                                       "hex" : "76a9144838a081d73cf134e8ff9cfd4015406c73beceb388" + ("ac"*4002),
                                        "type" : "nonstandard"
                                    }
                                }
