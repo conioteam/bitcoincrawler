@@ -149,7 +149,7 @@ class VOUTDecoder:
             reqsigs = int(SCRIPTS[data['s'][0]])
             for i in range(1, howmany+1):
                 if isValidPubKey(data['s'][i]):
-                    addresses.append(pubtoaddr(data['s'][i]))
+                    addresses.append(pubtoaddr(data['s'][i].encode('utf-8')))
                 asm += ' {}'.format(data['s'][i])
             asm += ' {} {}'.format(SCRIPTS[data['s'][-2]],
                                   SCRIPTS[data['s'][-1]])
@@ -168,7 +168,7 @@ class VOUTDecoder:
         try:
             if len(data['s']) != 2:
                 return VOUTDecoder._decode_nonstandard(data)
-            b58_address = pubtoaddr(data['s'][0], 0x00)
+            b58_address = pubtoaddr(data['s'][0].encode('utf-8'), 0x00)
             asm = '{} {}'.format(data['s'][0],
                                  SCRIPTS[data['s'][1]])
             return VOUTDecoder.__return_script(value=Decimal('{}'.format(data['d']['value'])),
