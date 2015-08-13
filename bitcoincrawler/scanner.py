@@ -16,11 +16,11 @@ class BitcoinScanner:
         else:
             self.loop = None
 
-    def __notify_block(self, cur_block):
+    def _notify_block(self, cur_block):
         for n in self.blocks_observers:
             n.on_block(cur_block)
 
-    def __notify_transaction_blockchain_or_mempool(self, cur_tx, tx_observers, in_observers, out_observers):
+    def _notify_transaction_blockchain_or_mempool(self, cur_tx, tx_observers, in_observers, out_observers):
         for n in tx_observers:
             if self.loop:
                 self.loop.run_until_complete(asyncio.coroutine(lambda: n.on_transaction(cur_tx))())
@@ -44,32 +44,32 @@ class BitcoinScanner:
                         o_n.on_output(vout)
 
     def notify_transaction(self, cur_tx):
-        self.__notify_transaction_blockchain_or_mempool(
+        self._notify_transaction_blockchain_or_mempool(
             cur_tx, self.transactions_observers,
             self.inputs_observers, self.outputs_observers
         )
 
     def notify_mempool_transaction(self, cur_tx):
-        self.__notify_transaction_blockchain_or_mempool(
+        self._notify_transaction_blockchain_or_mempool(
             cur_tx, self.mempool_transactions_observers,
             self.mempool_inputs_observers, self.mempool_outputs_observers
         )
     def scan(self, mempool_limit=None):
-        notify_tx = \
-            len(self.transactions_observers) > 0 \
+        notify_tx = lambda: len(self.transactions_observers) > 0 \
             or len(self.inputs_observers) > 0 \
             or len(self.outputs_observers) > 0
 
-        notify_mempool_tx = \
-            len(self.mempool_transactions_observers) > 0 \
+        notify_mempool_tx = lambda: len(self.mempool_transactions_observers) > 0 \
             or len(self.mempool_inputs_observers) > 0 \
             or len(self.mempool_outputs_observers) > 0
 
-        notify_block = len(self.blocks_observers) > 0 or notify_tx
+        notify_block = lambda: len(self.blocks_observers) > 0 or notify_tx
 
         if notify_block:
+            print('....')
             for cur_block in self.blocks_generator:
-                self.__notify_block(cur_block)
+                print('yo')
+                self._notify_block(cur_block)
                 if notify_tx:
                     for tx in cur_block.tx:
                         self.notify_transaction(tx)
