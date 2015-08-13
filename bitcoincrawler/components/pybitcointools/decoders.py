@@ -90,7 +90,7 @@ class VOUTDecoder:
     @classmethod
     def _decode_PayToPubKeyHash(cls, data):
         try:
-            if data['s'][1] != 169 or len(data['s']) != 5 and data['s'][-2] != 136 and data['s'][-1] != 172:
+            if data['s'][1] != 169 or len(data['s']) != 5 or data['s'][-2] != 136 or data['s'][-1] != 172:
                 return VOUTDecoder._decode_nonstandard(data)
             asm = '{} {} {} {} {}'.format(SCRIPTS[data['s'][0]],
                                        SCRIPTS[data['s'][1]],
