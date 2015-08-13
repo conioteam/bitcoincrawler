@@ -21,7 +21,10 @@ class VINDecoder:
         ds = [0 if x == None else x for x in deserialize_script(vin['script'])]
         asm = ''
         for i, x in enumerate(ds):
-            asm += '{}'.format(x)
+            try:
+                asm += '{}'.format(SCRIPTS[x])
+            except:
+                asm += '{}'.format(x)
             if i < len(ds)-1:
                 asm += ' '
         return {'txid': vin['outpoint']['hash'],

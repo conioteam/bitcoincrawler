@@ -423,3 +423,35 @@ class TestVOUTDecoder(TestCase):
         sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][1], 1, "main")
         vout = json.loads(json.dumps(bitcoind_json_vout1), parse_float=Decimal)
         self.assertEqual(sut, vout)
+
+    def test_decode_nonstandard_transaction_5(self):
+        """
+        6d36bc17e947ce00bb6f12f8e7a56a1585c5a36188ffa2b05e10b4743273a74b
+        """
+        rawtransaction = "010000000237b17d763851cd1ab04a424463d413c4ee5cf61304c7fd76977bea7fce075705000000006a4730440" \
+                         "22002dbe4b5a2fbb521e4dc5fbec75fd960651a2754b03d0871b8c965469be50fa702206d97421fb7ea9359b63e" \
+                         "48c2108223284b9a71560bd8182469b9039228d7b3d701210295bf727111acdeab8778284f02b768d1e21acbcba" \
+                         "e42090cc49aaa3cc6d19cdaffffffff37b17d763851cd1ab04a424463d413c4ee5cf61304c7fd76977bea7fce07" \
+                         "57050100000070004830450220106a3e4ef0b51b764a28872262ffef55846514dacbdcbbdd652c849d395b43840" \
+                         "22100e03ae554c3cbb40600d31dd46fc33f25e47bf8525b1fe07282e3b6ecb5f3bb2801ab51210232abdc893e7f" \
+                         "0631364d7fd01cb33d24da45329a00357b3a7886211ab414d55a51aeffffffff01003e4900000000001976a9140" \
+                         "d7713649f9a0678f4e880b40f86b93289d1bb2788ac00000000"
+        pybtcd_deserialized_transaction = deserialize(rawtransaction)
+        bitcoind_json_vout0 = {
+            "value" : 0.04800000,
+            "n" : 0,
+            "scriptPubKey" : {
+                "asm" : "OP_DUP OP_HASH160 0d7713649f9a0678f4e880b40f86b93289d1bb27 OP_EQUALVERIFY OP_CHECKSIG",
+                "hex" : "76a9140d7713649f9a0678f4e880b40f86b93289d1bb2788ac",
+                "reqSigs" : 1,
+                "type" : "pubkeyhash",
+                "addresses" : [
+                    "12ECS2HotU1DmMfBZNArok4RdvbBfxFfcA"
+                ]
+            }
+        }
+        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
+        vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
+        print(sut)
+        print(vout)
+        self.assertEqual(sut, vout)
