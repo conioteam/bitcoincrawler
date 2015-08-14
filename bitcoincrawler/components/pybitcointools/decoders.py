@@ -23,7 +23,8 @@ class VINDecoder:
         asm = ''
         for i, x in enumerate(ds):
             try:
-                asm += '{}'.format(SCRIPTS[int(x)])
+                y = int(x, 16) if isinstance(x, str) else x
+                asm += '{}'.format(SCRIPTS[y])
             except:
                 asm += '{}'.format(x)
             if i < len(ds)-1:
@@ -110,8 +111,14 @@ class VOUTDecoder:
             elif script_type == "scripthash" and len(data['s'][1]) == 40:
                 return [hex_to_b58check(data['s'][1].encode('utf-8'), data['p']['p2sh'])]
             elif script_type == "multisig":
-                return [pubtoaddr(data['s'][i].encode('utf-8')) for i in range(1, int(SCRIPTS[data['s'][-2]])+1)
-                                  if isValidPubKey(data['s'][i])]
+                addrs = []
+                for i in range(1, int(SCRIPTS[data['s'][-2]])+1):
+                    if len(data['s'][i]) not in (130, 66):
+                        raise VoutDecoderException('', '', '')
+                    if isValidPubKey(data['s'][i]):
+                        k = pubtoaddr(data['s'][i].encode('utf-8'))
+                        if k not in addrs: addrs.append(k)
+                return addrs
             elif script_type == "pubkey":
                 return [pubtoaddr(data['s'][0].encode('utf-8'), 0x00)] if isValidPubKey(data['s'][0]) else []
         except (AttributeError, TypeError):

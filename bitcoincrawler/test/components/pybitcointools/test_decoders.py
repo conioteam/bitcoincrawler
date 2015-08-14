@@ -574,12 +574,9 @@ class TestVOUTDecoder(TestCase):
         for x in bitcoind_json_vouts:
             sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][x['n']], x['n'], "main")
             vout = json.loads(json.dumps(x), parse_float=Decimal)
-            if sut != vout:
-                print(sut)
-                print(vout)
-                self.assertEqual(sut, vout)
+            self.assertEqual(sut, vout)
 
-    def test_standard_pubkeyhash_op_drop_vin(self):
+    def test_decode_standard_pubkeyhash_op_drop_vin(self):
         """
         51874c4b26a92dacb256f0e60303daabf60a63681111c4c1948f0bba25d8df96
         """
@@ -611,6 +608,72 @@ class TestVOUTDecoder(TestCase):
         sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
         sut_in = VINDecoder.decode(pybtcd_deserialized_transaction['ins'][0])
         vin = json.loads(json.dumps(bitcoind_json_vin0), parse_float=Decimal)
+        vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
+        self.assertEqual(sut, vout)
+        self.assertEqual(sut_in, vin)
+
+    def test_decode_nonostandard_9(self):
+        """
+        0f20c8dab4a8dfb50dd5cf4c276ba1fab1c79cae5b6641be2f67faaca838c1e6
+        """
+        rawtransaction = "0100000002919ce962176f35c28531389b386f98ea9ca418bfe50b2791bc680424638b6079010000006b48304" \
+                         "5022100f1165ece65fc48f7b72e274b874924cece0f943ce5bc041bdcce23f7346218f0022079cf10cde06355" \
+                         "11f465d18d16edab9321eac9055f5a66c320fc8ef364bb6c72012102b20dafdbe1f0da03bbe07eae16e07fe6a" \
+                         "29cf3e3e564525ce4d5a9b687a1bd22ffffffffe109088d7f9ffeae98d356c535ca4d6e5893b561a299f71dfd" \
+                         "2e6af1fdff7abf010000006c493046022100e058b2e7fd16e73841dcfbc58eb644d1ee84d055913e2858855e8" \
+                         "2df35496598022100bc56a9b63f547d451b3d7a02a5e8d6fa94777c29dc84d1f2ecd5590da8f00c9e012102e3" \
+                         "5cd7a41926b636db064133926c1834139dd58cb5fd968258d01b1b696c2da3ffffffff01e03cc80100000000a" \
+                         "a512102953397b893148acec2a9da8341159e9e7fb3d32987c3563e8bdf22116213623441048da561da64584f" \
+                         "b1457e906bc2840a1f963b401b632ab98761d12d74dd795bbf410c7b6d6fd39acf9d870cb9726578eaf8ba430" \
+                         "bb296eac24957f3fb3395b8b042060466616fb675310aeb024f957b4387298dc28305bc7276bf1f7f662a6764" \
+                         "bcdffb6a9740de596f89ad8000f8fa6741d65ff1338f53eb39e98179dd18c6e6be8e3953ae00000000"
+        pybtcd_deserialized_transaction = deserialize(rawtransaction)
+        bitcoind_json_vout0 = {
+            "value" : 0.29900000,
+            "n" : 0,
+            "scriptPubKey" : {
+                "asm" : "1 02953397b893148acec2a9da8341159e9e7fb3d32987c3563e8bdf221162136234 048da561da64584fb1457e906bc2840a1f963b401b632ab98761d12d74dd795bbf410c7b6d6fd39acf9d870cb9726578eaf8ba430bb296eac24957f3fb3395b8b0 060466616fb675310aeb024f957b4387298dc28305bc7276bf1f7f662a6764bcdffb6a9740de596f89ad8000f8fa6741d65ff1338f53eb39e98179dd18c6e6be8e39 3 OP_CHECKMULTISIG",
+                "hex" : "512102953397b893148acec2a9da8341159e9e7fb3d32987c3563e8bdf22116213623441048da561da64584fb1457e906bc2840a1f963b401b632ab98761d12d74dd795bbf410c7b6d6fd39acf9d870cb9726578eaf8ba430bb296eac24957f3fb3395b8b042060466616fb675310aeb024f957b4387298dc28305bc7276bf1f7f662a6764bcdffb6a9740de596f89ad8000f8fa6741d65ff1338f53eb39e98179dd18c6e6be8e3953ae",
+                "type" : "nonstandard"
+            }
+        }
+        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
+        vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
+        self.assertEqual(sut, vout)
+
+
+    def test_decode_nonstandard_transaction_9(self):
+        """
+        91c8b08f305d895d6bc8f43bbdd36dcbc7f1d998e3df5e8f13dd9cdeebf15cb5
+        """
+        rawtransaction = "0100000001a30562a1cd9e907a90d7367ceaf55e859417a53ffda6190086110b7f8a4b4d2201000000020151ffff" \
+                         "ffff0130d397000000000017a91469d98314fbc4dbee037f86f51392a14c4c1d41da8700000000"
+        pybtcd_deserialized_transaction = deserialize(rawtransaction)
+        bitcoind_json_vout0 = {
+            "value" : 0.09950000,
+            "n" : 0,
+            "scriptPubKey" : {
+                "asm" : "OP_HASH160 69d98314fbc4dbee037f86f51392a14c4c1d41da OP_EQUAL",
+                "hex" : "a91469d98314fbc4dbee037f86f51392a14c4c1d41da87",
+                "reqSigs" : 1,
+                "type" : "scripthash",
+                "addresses" : [
+                    "3BLhSgpY9xCFJv9Y6AyA9eSRZT6k3z6w4s"
+                ]
+            }
+        }
+        bitcoind_json_vin1 = {
+            "txid" : "224d4b8a7f0b11860019a6fd3fa51794855ef5ea7c36d7907a909ecda16205a3",
+            "vout" : 1,
+            "scriptSig" : {
+                "asm" : "81",
+                "hex" : "0151"
+            },
+            "sequence" : 4294967295
+        }
+        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
+        sut_in = VINDecoder.decode(pybtcd_deserialized_transaction['ins'][0])
+        vin = json.loads(json.dumps(bitcoind_json_vin1), parse_float=Decimal)
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
         self.assertEqual(sut, vout)
         self.assertEqual(sut_in, vin)
