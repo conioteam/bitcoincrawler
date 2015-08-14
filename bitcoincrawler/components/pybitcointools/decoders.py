@@ -4,6 +4,7 @@ from bitcoin import pubtoaddr, hex_to_b58check
 from decimal import Decimal
 from bitcoincrawler.components.pybitcointools.exceptions.decoders import VoutDecoderException
 
+
 class VINDecoder:
     @classmethod
     def decode(cls, vin):
@@ -37,8 +38,7 @@ class VINDecoder:
 
 class VOUTDecoder:
     """
-    This needs to be edited and compliant with the Bitcoin Scripting Language.
-    Now catch only frequent cases.
+    Experimental
     """
     @classmethod
     def __return_script(cls,
@@ -132,13 +132,13 @@ class VOUTDecoder:
     @classmethod
     def get_script_type(cls, script):
         try:
-            if script[1] == 169 and len(script) == 5 and script[-2] == 136 and script[-1] == 172:
+            if script[1] == 169 and script[-2] == 136 and script[-1] == 172 and len(script) == 5:
                 return "pubkeyhash"
             elif script[0] == 106:
                 return "nulldata"
-            elif len(script) == 3 and script[0] == 169 and script[2] == 135:
+            elif script[0] == 169 and script[2] == 135 and len(script) == 3:
                 return "scripthash"
-            elif len(script) and isinstance(script[0], str) and script[1] == 172:
+            elif script[1] == 172 and len(script[0]) in (66, 128, 130):
                 return 'pubkey'
             elif script[-1] == 174 and script[-2] in range(1,21) and script[0] in range(1,21) \
                 and len(script) == int(script[-2]) + 3:

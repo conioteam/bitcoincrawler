@@ -513,3 +513,69 @@ class TestVOUTDecoder(TestCase):
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
         self.assertEqual(sut, vout)
 
+    def test_decode_nonstandard_8(self):
+        rawtransaction = "0100000001b409333c7daee2ecb95e860ce7dc3376eff8aae437cad727cf9b624cf3354c00010000008a47304" \
+                         "40220b5afdf9e538c59fd0604d43c7053cefeff20bbe434f7c0d71b8800c31e88c34b02209e0d55cc3bae16f8" \
+                         "ba347213d0b565b915f25e401351c2d405edcec69af0508f01410441a99c4157ed26924cd410a1cd3d7524e3f" \
+                         "4a1a5d4e764755b73abbd0c479d8a3e9c4b916e62d5603ac4514fffccaa4a27aa7d2cac403a6b872981e71acb" \
+                         "9528ffffffff0400ca9a3b000000001976a9140cbc34efb7e6cde16940cc0283a5770c6627616c88ace0b85a0" \
+                         "2000000001976a91403f024eb71ceafb36c67bc7ebdcfbd0e6b2a70d488ac00000000000000007b4c784d6573" \
+                         "736167653a2057656c6c204920677565737320746861742773206f6e652077617920746f20646f2069742e205" \
+                         "768792063616e27742074686520717420636c69656e742062652074686973206e6963653f20466f7220616e79" \
+                         "6f6e6520737472696e67732d696e672074686520626c6f636b636861ac000000000000000023214120656c656" \
+                         "374696f6e7320736f6f6e2e00000000000000000000000000000000ac00000000"
+        pybtcd_deserialized_transaction = deserialize(rawtransaction)
+        bitcoind_json_vouts = [
+        {
+            "value" : 10.00000000,
+            "n" : 0,
+            "scriptPubKey" : {
+                "asm" : "OP_DUP OP_HASH160 0cbc34efb7e6cde16940cc0283a5770c6627616c OP_EQUALVERIFY OP_CHECKSIG",
+                "hex" : "76a9140cbc34efb7e6cde16940cc0283a5770c6627616c88ac",
+                "reqSigs" : 1,
+                "type" : "pubkeyhash",
+                "addresses" : [
+                    "12ALa92sWLrXy5DSwL6Qs53AY4GP5e4GrX"
+                ]
+            }
+        },
+        {
+            "value" : 0.39500000,
+            "n" : 1,
+            "scriptPubKey" : {
+                "asm" : "OP_DUP OP_HASH160 03f024eb71ceafb36c67bc7ebdcfbd0e6b2a70d4 OP_EQUALVERIFY OP_CHECKSIG",
+                "hex" : "76a91403f024eb71ceafb36c67bc7ebdcfbd0e6b2a70d488ac",
+                "reqSigs" : 1,
+                "type" : "pubkeyhash",
+                "addresses" : [
+                    "1Mpi67rzcwzmkcrzTAakUwtYnRcERSbhs"
+                ]
+            }
+        },
+        {
+            "value" : 0.00000000,
+            "n" : 2,
+            "scriptPubKey" : {
+                "asm" : "4d6573736167653a2057656c6c204920677565737320746861742773206f6e652077617920746f20646f2069742e205768792063616e27742074686520717420636c69656e742062652074686973206e6963653f20466f7220616e796f6e6520737472696e67732d696e672074686520626c6f636b636861 OP_CHECKSIG",
+                "hex" : "4c784d6573736167653a2057656c6c204920677565737320746861742773206f6e652077617920746f20646f2069742e205768792063616e27742074686520717420636c69656e742062652074686973206e6963653f20466f7220616e796f6e6520737472696e67732d696e672074686520626c6f636b636861ac",
+                "type" : "nonstandard"
+            }
+        },
+        {
+            "value" : 0.00000000,
+            "n" : 3,
+            "scriptPubKey" : {
+                "asm" : "4120656c656374696f6e7320736f6f6e2e00000000000000000000000000000000 OP_CHECKSIG",
+                "hex" : "214120656c656374696f6e7320736f6f6e2e00000000000000000000000000000000ac",
+                "type" : "pubkey"
+            }
+        }
+    ]
+        for x in bitcoind_json_vouts:
+            sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][x['n']], x['n'], "main")
+            vout = json.loads(json.dumps(x), parse_float=Decimal)
+            if sut != vout:
+                print(sut)
+                print(vout)
+                self.assertEqual(sut, vout)
+
