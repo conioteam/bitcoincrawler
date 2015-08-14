@@ -579,3 +579,38 @@ class TestVOUTDecoder(TestCase):
                 print(vout)
                 self.assertEqual(sut, vout)
 
+    def test_standard_pubkeyhash_op_drop_vin(self):
+        """
+        51874c4b26a92dacb256f0e60303daabf60a63681111c4c1948f0bba25d8df96
+        """
+        rawtransaction = "010000000135ae0d99ffc1aea8fe97944e01b7842cbcbb5e186ab993438def514a2153b5cd0000000003010075f" \
+                         "fffffff01b01df505000000001976a914d994aabea310efb308baa96c044aeae1fe1c413188ac00000000"
+        pybtcd_deserialized_transaction = deserialize(rawtransaction)
+        bitcoind_json_vout0 = {
+            "value" : 0.99950000,
+            "n" : 0,
+            "scriptPubKey" : {
+                "asm" : "OP_DUP OP_HASH160 d994aabea310efb308baa96c044aeae1fe1c4131 OP_EQUALVERIFY OP_CHECKSIG",
+                "hex" : "76a914d994aabea310efb308baa96c044aeae1fe1c413188ac",
+                "reqSigs" : 1,
+                "type" : "pubkeyhash",
+                "addresses" : [
+                    "1LqTjBzMRdXQqXpRQo1zDYRiUobAVS55Lo"
+                ]
+            }
+        }
+        bitcoind_json_vin0 = {
+            "txid" : "cdb553214a51ef8d4393b96a185ebbbc2c84b7014e9497fea8aec1ff990dae35",
+            "vout" : 0,
+            "scriptSig" : {
+                "asm" : "0 OP_DROP",
+                "hex" : "010075"
+            },
+            "sequence" : 4294967295
+        }
+        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][0], 0, "main")
+        sut_in = VINDecoder.decode(pybtcd_deserialized_transaction['ins'][0])
+        vin = json.loads(json.dumps(bitcoind_json_vin0), parse_float=Decimal)
+        vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
+        self.assertEqual(sut, vout)
+        self.assertEqual(sut_in, vin)

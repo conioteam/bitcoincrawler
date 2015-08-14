@@ -23,7 +23,7 @@ class VINDecoder:
         asm = ''
         for i, x in enumerate(ds):
             try:
-                asm += '{}'.format(SCRIPTS[x])
+                asm += '{}'.format(SCRIPTS[int(x)])
             except:
                 asm += '{}'.format(x)
             if i < len(ds)-1:
