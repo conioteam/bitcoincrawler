@@ -11,6 +11,8 @@ class BitcoinScanner:
         self.outputs_observers = []
         self.mempool_inputs_observers = []
         self.mempool_outputs_observers = []
+        self.mempool_transactions_left_observers = []
+        self.mempool_txids = []
         if async:
             self.loop = asyncio.get_event_loop()
         else:
@@ -55,6 +57,7 @@ class BitcoinScanner:
             self.mempool_inputs_observers, self.mempool_outputs_observers
         )
     def scan(self, mempool_limit=None):
+        new_mempool = []
         notify_tx = lambda: len(self.transactions_observers) > 0 \
             or len(self.inputs_observers) > 0 \
             or len(self.outputs_observers) > 0
@@ -65,6 +68,8 @@ class BitcoinScanner:
 
         notify_block = lambda: len(self.blocks_observers) > 0 or notify_tx
 
+        notify_tx_left_mempool = lambda: len(self.mempool_transactions_left_observers) > 0
+
         if notify_block:
             for cur_block in self.blocks_generator:
                 self._notify_block(cur_block)
@@ -73,8 +78,20 @@ class BitcoinScanner:
                         self.notify_transaction(tx)
 
         if notify_mempool_tx:
-            for cur_transaction in self.node_backend.get_mempool_transactions(limit=mempool_limit):
+            new_mempool = self.node_backend.get_mempool_transactions(limit=mempool_limit)
+            for cur_transaction in new_mempool:
+                self.mempool_txids.append(cur_transaction.txid)
                 self.notify_mempool_transaction(cur_transaction)
+
+        if notify_tx_left_mempool:
+            new_mempool = self.node_backend.get_mempool_transactions(limit=mempool_limit) if not new_mempool else \
+                new_mempool
+            if not self.mempool_txs:
+                self.mempool_txs = new_mempool
+            else:
+                diff = [tx for tx in self.mempool_txs if tx not in new_mempool]
+
+
 
 class AsyncTaskException(Exception):
     def __init__(self, msg, method, params):

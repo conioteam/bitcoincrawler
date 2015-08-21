@@ -32,6 +32,7 @@ class VINDecoder:
                                                                                        byteorder='little'))
             except:
                 to_int = int().from_bytes(binascii.unhexlify(x), byteorder="little")
+                # FIXME - Sometimes bytes wrap into hex, sometimes into dec
                 asm += str(to_int if to_int < 1418797546 else x)
             if i < len(ds)-1:
                 asm += ' '

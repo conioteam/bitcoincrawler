@@ -7,8 +7,8 @@ from decimal import Decimal
 from collections import OrderedDict
 from unittest import TestCase
 
-BTCD_USER = 'bitcoinrpc'
-BTCD_PASSWD = 'BPDuix1ptFkY1Yh2N6QFSjLwa3qRHC8xAdqrsbnYnV3J'
+BTCD_USER = '<<your username>>'
+BTCD_PASSWD = '<<your password>>'
 BTCD_URL = "http://127.0.0.1:8332/"
 
 class fakefloat(float):
@@ -39,7 +39,7 @@ class _TestsBuilder:
             if y:
                 self.txs.append(y.group())
 
-    def downloads_transactions(self, t='bitcoind'):
+    def downloads_transactions(self):
         print('Total txs: {}'.format(len(self.txs)))
         for i, tx in enumerate(self.txs):
             with open('local/transactions/{}.json'.format(tx), 'w') as f:
@@ -73,7 +73,6 @@ class _TestsBuilder:
         try:
             self.ttx += 1
             t.assertDictEqual(a, b)
-            #print('compared {} : OK'.format(a['txid']))
         except AssertionError as e:
             self.ptx += 1
             print('[{} / {}] compared {} : FAILURE'.format(self.ptx, self.ttx, a['txid']))
