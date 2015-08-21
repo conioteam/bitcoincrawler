@@ -25,9 +25,14 @@ class VINDecoder:
         for i, x in enumerate(ds):
             try:
                 y = int(x, 16) if isinstance(x, str) else x
-                asm += '{}'.format(SCRIPTS[y])
+                if 256 > y > 128 and y not in range(139, 176):
+                    asm += '{}'.format(128 - y)
+                else:
+                    asm += '{}'.format(SCRIPTS[y] if len(ds) > 1 else int().from_bytes(binascii.unhexlify(y),
+                                                                                       byteorder='little'))
             except:
-                asm += '{}'.format(x)
+                to_int = int().from_bytes(binascii.unhexlify(x), byteorder="little")
+                asm += str(to_int if to_int < 1418797546 else x)
             if i < len(ds)-1:
                 asm += ' '
         return {'txid': vin['outpoint']['hash'],
@@ -51,7 +56,7 @@ class VOUTDecoder:
                       req_sigs=None,
                       script_type=None,
                       addresses=None):
-        v = (Decimal(value) / Decimal(100000000)) if value else Decimal('0.00000000')
+        v = (Decimal(value) / Decimal(100000000)) if value else Decimal('0.0')
         r = {'value': v,
                 'n': n,
                 'scriptPubKey': {'asm': asm,
@@ -86,17 +91,13 @@ class VOUTDecoder:
                     reqsigs = VOUTDecoder.get_reqsigs(data['s'], script_type) if addresses else None
                 except VoutDecoderException:
                     return VOUTDecoder.__decode(data, script_type="nonstandard")
-
-            asm = ''
-            for i, b in enumerate(data['s']):
-                try:
-                    asm += SCRIPTS[b]
-                except KeyError:
-                    if script_type == 'nulldata':
-                        asm += str(int().from_bytes(binascii.unhexlify(b), byteorder="little"))
-                    else:
-                        asm += str(b)
-                if i < len(data['s'])-1: asm += ' '
+            try:
+                asm = VOUTDecoder.get_asm(data, script_type)
+            except VoutDecoderException:
+                if script_type != 'nonstandard':
+                    return VOUTDecoder.__decode(data, script_type="nonstandard")
+                else:
+                    raise Exception()
             return VOUTDecoder.__return_script(value=Decimal('{}'.format(data['d']['value'])) \
                                                      if data['d']['value'] else None,
                                                        n=data['n'],
@@ -110,6 +111,7 @@ class VOUTDecoder:
 
     @classmethod
     def get_addresses(cls, data, script_type):
+        candidate_nonstandard = False
         try:
             if script_type == "pubkeyhash" and len(data['s'][2]) == 40:
                 return [hex_to_b58check(data['s'][2].encode('utf-8'), data['p']['pub'])]
@@ -118,11 +120,13 @@ class VOUTDecoder:
             elif script_type == "multisig":
                 addrs = []
                 for i in range(1, int(SCRIPTS[data['s'][-2]])+1):
-                    if len(data['s'][i]) not in (130, 66):
-                        raise VoutDecoderException('', '', '')
+                    if len(data['s'][i]) not in (130, 66, 78):
+                        candidate_nonstandard = True
                     if isValidPubKey(data['s'][i]):
                         k = pubtoaddr(data['s'][i].encode('utf-8'))
-                        if k not in addrs: addrs.append(k)
+                        addrs.append(k)
+                if candidate_nonstandard:
+                    raise VoutDecoderException('','','')
                 return addrs
             elif script_type == "pubkey":
                 return [pubtoaddr(data['s'][0].encode('utf-8'), 0x00)] if isValidPubKey(data['s'][0]) else []
@@ -144,13 +148,13 @@ class VOUTDecoder:
     @classmethod
     def get_script_type(cls, script):
         try:
-            if script[1] == 169 and script[-2] == 136 and script[-1] == 172 and len(script) == 5:
+            if len(script) == 5 and script[1] == 169 and script[-2] == 136 and script[-1] == 172:
                 return "pubkeyhash"
-            elif script[0] == 106:
+            elif script[0] == 106 and len(script) < 3:
                 return "nulldata"
-            elif script[0] == 169 and script[2] == 135 and len(script) == 3:
+            elif len(script) == 3 and script[0] == 169 and script[2] == 135:
                 return "scripthash"
-            elif script[1] == 172 and len(script[0]) in (66, 128, 130):
+            elif script[1] == 172 and len(script[0]) in (66, 68, 76, 128, 130) and len(script) == 2:
                 return 'pubkey'
             elif script[-1] == 174 and script[-2] in range(1,21) and script[0] in range(1,21) \
                 and len(script) == int(script[-2]) + 3:
@@ -159,6 +163,37 @@ class VOUTDecoder:
                 return 'nonstandard'
         except (IndexError, KeyError):
             return 'nonstandard'
+
+    @classmethod
+    def get_asm(cls, data, script_type):
+        asm = ''
+        for i, b in enumerate(data['s']):
+            try:
+                if i == (len(data['s']) -1) and script_type not in ('nulldata', 'nonstandard') and len(data['s']) > 1:
+                    try:
+                        if isinstance(b, int):
+                            asm += SCRIPTS[b]
+                        else:
+                            asm += b
+                    except KeyError:
+                        asm += "[error]"
+                else:
+                    asm += SCRIPTS[b]
+            except KeyError:
+                if isinstance(b, int) and b < 255:
+                    asm += 'OP_UNKNOWN'
+                elif script_type == 'nulldata':
+                    if isinstance(b, str):
+                        if len(b) > 80:
+                            raise VoutDecoderException('Failure', '', '')
+                        to_int = int().from_bytes(binascii.unhexlify(b), byteorder="little")
+                        asm += str(to_int if len(b) <= 8 else b)
+                    else:
+                        asm += str(b)
+                else:
+                    asm += str(b)
+            if i < len(data['s'])-1: asm += ' '
+        return asm
     
         
 def isValidPubKey(pubkey):

@@ -482,6 +482,7 @@ class TestVOUTDecoder(TestCase):
         sut_in = VINDecoder.decode(pybtcd_deserialized_transaction['ins'][1])
         vin = json.loads(json.dumps(bitcoind_json_vin1), parse_float=Decimal)
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
+        self.maxDiff = None
         self.assertEqual(sut, vout)
         self.assertEqual(sut_in, vin)
 
