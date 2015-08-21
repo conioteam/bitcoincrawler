@@ -39,7 +39,6 @@ def do():
             self.task = task
 
         def on_transaction(self, tx):
-            #print(tx.json)
             self.transactions += 1
             if self.task == 'push':
                 txz[tx.txid] = tx.json
@@ -97,6 +96,7 @@ def do():
     bind(adapter1, mp1, obs1).scan(mempool_limit=15000)
     at2 = time.time() - s
     res = '{} parser: {} txs scanned in {} blocks, {} txs from mempool, done in {}s ({} tx\s)'
+    #FIXME Useful to find parsing mistakes, but unreliable for timings, since the step 2 handles comparison
 
     logging.warning(res.format('async local', obs.transactions, obs.blocks, mp.transactions, (at1), (obs.transactions+mp.transactions) / at1))
     logging.warning(res.format('async btrpc', obs1.transactions, obs1.blocks, mp1.transactions, (at2), (obs1.transactions+mp1.transactions) / at2))
@@ -111,8 +111,9 @@ btcd = BitcoinCli(BTCD_USER, BTCD_PASSWD, BTCD_URL, async=ASYNC, async_limit=100
 blocks_factory = BitcoindFactory(btcd, async=ASYNC)
 txs_factory = PyBitcoinToolsFactory(btcd, async=ASYNC)
 
-start_height = 1
-increment = 500
-while start_height < 370000:
-    do()
-    start_height += increment
+if __name__ == '__main__':
+    start_height = 1
+    increment = 5
+    while start_height < 370000:
+        do()
+        start_height += increment

@@ -1,18 +1,20 @@
 import asyncio
 
 class BitcoinScanner:
-    def __init__(self, blocks_generator, node_backend, async=False):
+    def __init__(self, blocks_generator, node_backend, async=False, mempool_storage=None):
+        self.mempool_storage = mempool_storage
         self.blocks_generator = blocks_generator
         self.node_backend = node_backend
         self.blocks_observers = []
-        self.transactions_observers = []
-        self.mempool_transactions_observers = []
         self.inputs_observers = []
         self.outputs_observers = []
+        self.transactions_observers = []
+        self.mempool_transactions_observers = []
         self.mempool_inputs_observers = []
         self.mempool_outputs_observers = []
-        self.mempool_transactions_left_observers = []
-        self.mempool_txids = []
+        self.transaction_left_mempool_observers = []
+        self.inputs_left_mempool_observers = []
+        self.outputs_left_mempool_observers = []
         if async:
             self.loop = asyncio.get_event_loop()
         else:
@@ -50,6 +52,11 @@ class BitcoinScanner:
             cur_tx, self.transactions_observers,
             self.inputs_observers, self.outputs_observers
         )
+    def notify_transaction_left_mempool(self, cur_tx):
+        self._notify_transaction_blockchain_or_mempool(
+            cur_tx, self.transaction_left_mempool_observers,
+            self.inputs_left_mempool_observers, self.outputs_left_mempool_observers
+        )
 
     def notify_mempool_transaction(self, cur_tx):
         self._notify_transaction_blockchain_or_mempool(
@@ -68,7 +75,8 @@ class BitcoinScanner:
 
         notify_block = lambda: len(self.blocks_observers) > 0 or notify_tx
 
-        notify_tx_left_mempool = lambda: len(self.mempool_transactions_left_observers) > 0
+        notify_tx_left_mempool = lambda: len(self.transaction_left_mempool_observers) > 0 and \
+                                         self.mempool_storage
 
         if notify_block:
             for cur_block in self.blocks_generator:
@@ -80,17 +88,19 @@ class BitcoinScanner:
         if notify_mempool_tx:
             new_mempool = self.node_backend.get_mempool_transactions(limit=mempool_limit)
             for cur_transaction in new_mempool:
-                self.mempool_txids.append(cur_transaction.txid)
                 self.notify_mempool_transaction(cur_transaction)
 
         if notify_tx_left_mempool:
             new_mempool = self.node_backend.get_mempool_transactions(limit=mempool_limit) if not new_mempool else \
                 new_mempool
-            if not self.mempool_txs:
-                self.mempool_txs = new_mempool
+            stored_mempool = self.mempool_storage.get()
+            if not stored_mempool:
+                self.mempool_storage.set(new_mempool)
             else:
-                diff = [tx for tx in self.mempool_txs if tx not in new_mempool]
-
+                diff = [tx for tx in stored_mempool if tx not in new_mempool]
+                for tx in diff:
+                    self.notify_transaction_left_mempool(tx)
+                self.mempool_storage.set(new_mempool)
 
 
 class AsyncTaskException(Exception):
