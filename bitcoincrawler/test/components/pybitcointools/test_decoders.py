@@ -159,7 +159,29 @@ class TestVOUTDecoder(TestCase):
         self.assertEqual(vout, sut)
 
     def test__decode_OPRETURN(self):
-        pass
+        """
+        just prunable, no data
+        """
+        rawtransaction = "010000000134a10cb4123e224556f5277a5d3632920c44be56e0949525e59412dc098bca22030000006b4830450" \
+                         "22100f140f7a6e6e3b0513cadf1f1e19a5e2bed086b2fe2c4f1f4e1568d56713233ff022067e6178031e630c3e9" \
+                         "9533e373effc2701cbcde012e881e6b12cc47e1469cb72012103c86e3c49a99dd688c6c6ad05d725b6a04ef1983" \
+                         "6b13d3e90ef282fc4f2f9ee71ffffffff0522020000000000001976a914946cb2e08075bcbaf157e47bcb67eb2b" \
+                         "2339d24288acac0200000000000047512103c86e3c49a99dd688c6c6ad05d725b6a04ef19836b13d3e90ef282fc" \
+                         "4f2f9ee712102c0189e96fbf6ff5953219b28399ef64e8e84d746f1ccbcb374186733e406243f52ae2202000000" \
+                         "0000001976a9140e483ae9d956b175df5cf3654d5074fab99c8e7388ace8a90500000000001976a914784345e76" \
+                         "ea29fd7bfe31f6f34622e154d0bb8fc88ac0000000000000000016a00000000"
+        pybtcd_deserialized_transaction = deserialize(rawtransaction)
+        bitcoind_json_vout0 = {"value" : 0.00000000,
+                               "n" : 4,
+                               "scriptPubKey" : {
+                                    "asm" : "OP_RETURN",
+                                    "hex" : "6a",
+                                    "type" : "nulldata"
+                                }
+                            }
+        sut = VOUTDecoder.decode(pybtcd_deserialized_transaction['outs'][4], 4, "main")
+        vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
+        self.assertEqual(vout, sut)
 
     def test__decode_P2SH(self):
         """
@@ -677,3 +699,4 @@ class TestVOUTDecoder(TestCase):
         vout = json.loads(json.dumps(bitcoind_json_vout0), parse_float=Decimal)
         self.assertEqual(sut, vout)
         self.assertEqual(sut_in, vin)
+

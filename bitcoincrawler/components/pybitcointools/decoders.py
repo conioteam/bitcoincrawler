@@ -3,6 +3,7 @@ from bitcoincrawler.components.pybitcointools.scripts import SCRIPTS
 from bitcoin import pubtoaddr, hex_to_b58check
 from decimal import Decimal
 from bitcoincrawler.components.pybitcointools.exceptions.decoders import VoutDecoderException
+import binascii
 
 
 class VINDecoder:
@@ -77,31 +78,35 @@ class VOUTDecoder:
     def __decode(cls, data, script_type=None):
         addresses = []
         reqsigs = None
-        if script_type != 'nonstandard':
-            try:
-                script_type = VOUTDecoder.get_script_type(data['s'])
-                addresses = VOUTDecoder.get_addresses(data, script_type) if script_type != 'nonstandard' else []
-                reqsigs = VOUTDecoder.get_reqsigs(data['s'], script_type) if addresses else None
-            except VoutDecoderException:
-                if script_type != "nonstandard":
+        try:
+            if script_type != 'nonstandard':
+                try:
+                    script_type = VOUTDecoder.get_script_type(data['s'])
+                    addresses = VOUTDecoder.get_addresses(data, script_type) if script_type != 'nonstandard' else []
+                    reqsigs = VOUTDecoder.get_reqsigs(data['s'], script_type) if addresses else None
+                except VoutDecoderException:
                     return VOUTDecoder.__decode(data, script_type="nonstandard")
-                else:
-                    raise VoutDecoderException('_decode_nonstandard', 'recursive', data)
-        asm = ''
-        for i, b in enumerate(data['s']):
-            try:
-                asm += SCRIPTS[b]
-            except KeyError:
-                asm += str(b)
-            if i < len(data['s'])-1: asm += ' '
-        return VOUTDecoder.__return_script(value=Decimal('{}'.format(data['d']['value'])) \
-                                                 if data['d']['value'] else None,
-                                           n=data['n'],
-                                           hex_script=data['hs'],
-                                           asm=asm,
-                                           addresses=addresses if addresses else None,
-                                           req_sigs=reqsigs,
-                                           script_type=script_type)
+
+            asm = ''
+            for i, b in enumerate(data['s']):
+                try:
+                    asm += SCRIPTS[b]
+                except KeyError:
+                    if script_type == 'nulldata':
+                        asm += str(int().from_bytes(binascii.unhexlify(b), byteorder="little"))
+                    else:
+                        asm += str(b)
+                if i < len(data['s'])-1: asm += ' '
+            return VOUTDecoder.__return_script(value=Decimal('{}'.format(data['d']['value'])) \
+                                                     if data['d']['value'] else None,
+                                                       n=data['n'],
+                                                       hex_script=data['hs'],
+                                                       asm=asm,
+                                                       addresses=addresses if addresses else None,
+                                                       req_sigs=reqsigs,
+                                                       script_type=script_type)
+        except:
+            raise VoutDecoderException('_decode_nonstandard', 'recursive', data)
 
     @classmethod
     def get_addresses(cls, data, script_type):
