@@ -1,5 +1,5 @@
 from unittest import TestCase
-from bitcoincrawler import scanner
+from bitcoincrawler import blockchain_scanner
 from mock import Mock
 
 class TestScanner(TestCase):
@@ -23,7 +23,7 @@ class TestScanner(TestCase):
         self.mempool_obs.on_output.side_effect = [True for x in range(1,100)]
 
         self.blockgen = [self.block_obj, self.block_obj, self.block_obj]
-        self.sut = scanner.BitcoinScanner(self.blockgen, self.node_backend)
+        self.sut = blockchain_scanner.BitcoinScanner(self.blockgen, self.node_backend)
 
         self.sut.blocks_observers.append(self.block_obs)
         self.sut.transactions_observers.append(self.block_obs)

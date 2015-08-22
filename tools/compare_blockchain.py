@@ -1,7 +1,7 @@
 from bitcoincrawler.components.bitcoind.client import *
 from bitcoincrawler.components.bitcoind.factory import BitcoindFactory
 from bitcoincrawler.components.pybitcointools.factory import PyBitcoinToolsFactory
-from bitcoincrawler.scanner import *
+from bitcoincrawler.blockchain_scanner import *
 from bitcoincrawler.components.base_factory import AdapterFactory
 import time
 import json
@@ -27,36 +27,42 @@ def defaultencode(o):
         return fakefloat(o)
     raise TypeError(repr(o) + " is not JSON serializable")
 
+class Storage():
+    def __init__(self):
+        self.txz = {}
+        self.successes = []
+        self.failures = {}
 
-def do():
-    logging.warning("Starting task from height {} to {}".format(start_height, start_height+increment-1))
-    class Observer():
-        def __init__(self, task=None):
+class Observer():
+        def __init__(self, storage, task=None):
             self.transactions = 0
             self.inputs = 0
             self.outputs = 0
             self.blocks = 0
             self.task = task
+            self.txz = storage.txz
+            self.successes = storage.successes
+            self.failures = storage.failures
 
         def on_transaction(self, tx):
             self.transactions += 1
             if self.task == 'push':
-                txz[tx.txid] = tx.json
+                self.txz[tx.txid] = tx.json
             elif self.task == 'compare':
                 r = json.dumps(tx.json, default=defaultencode)
-                l = json.dumps(txz[tx.txid], default=defaultencode)
+                l = json.dumps(self.txz[tx.txid], default=defaultencode)
                 tr = json.loads(r)
                 tl = json.loads(l)
                 match = bool(tl == tr)
                 if randint(0,42*100) == 42:
                     logging.warning('[txid {}]: md5: l: {}, r: {}'.format(tx.txid,
-                                                                          md5(l.encode('utf-8')).hexdigest(), 
+                                                                          md5(l.encode('utf-8')).hexdigest(),
                                                                           md5(r.encode('utf-8')).hexdigest()))
                 if match:
-                    successes.append(1)
+                    self.successes.append(1)
                 else:
                     print('{} doesn\'t match'.format(tx.txid))
-                    failures[tx.txid] = [tx.json, txz[tx.txid]]
+                    self.failures[tx.txid] = [tx.json, self.txz[tx.txid]]
 
         def on_input(self, input):
             self.inputs += 1
@@ -70,15 +76,15 @@ def do():
             self.blocks += 1
             print('new block: {}'.format(start_height + self.blocks))
 
-    obs = Observer(task='push')
-    mp = Observer()
-    txz = {}
-    successes = []
-    failures = {}
+
+def do(storage):
+    logging.warning("Starting task from height {} to {}".format(start_height, start_height+increment-1))
+    obs = Observer(storage, task='push')
+    mp = Observer(storage)
 
     def bind(adapter, mp_obs, obs):
       nodes_generator = adapter.generate_blocks(blockheight=start_height, max_iterations=increment)
-      bitcoin_scanner = BitcoinScanner(nodes_generator, adapter, async=ASYNC)
+      bitcoin_scanner = BitcoinScanner(nodes_generator, async=ASYNC)
       bitcoin_scanner.transactions_observers.append(obs)
       bitcoin_scanner.blocks_observers.append(obs)
       return bitcoin_scanner
@@ -88,19 +94,19 @@ def do():
     bind(adapter, mp, obs).scan()
     at1 = time.time() - s
 
-    mp1 = Observer()
-    obs1 = Observer(task='compare')
+    mp1 = Observer(storage)
+    obs1 = Observer(storage, task='compare')
     s = time.time()
     adapter1 = AdapterFactory(blocks_factory, blocks_factory)
 
-    bind(adapter1, mp1, obs1).scan(mempool_limit=15000)
+    bind(adapter1, mp1, obs1).scan()
     at2 = time.time() - s
     res = '{} parser: {} txs scanned in {} blocks, {} txs from mempool, done in {}s ({} tx\s)'
     #FIXME Useful to find parsing mistakes, but unreliable for timings, since the step 2 handles comparison
 
     logging.warning(res.format('async local', obs.transactions, obs.blocks, mp.transactions, (at1), (obs.transactions+mp.transactions) / at1))
     logging.warning(res.format('async btrpc', obs1.transactions, obs1.blocks, mp1.transactions, (at2), (obs1.transactions+mp1.transactions) / at2))
-    logging.warning('Match: {} out of {} transactions'.format(len(successes), len(successes)+len(list(failures.keys()))))
+    logging.warning('Match: {} out of {} transactions'.format(len(storage.successes), len(storage.successes)+len(list(storage.failures.keys()))))
 
 BTCD_USER = '<<your username>>'
 BTCD_PASSWD = '<<your password>>'
@@ -114,6 +120,7 @@ txs_factory = PyBitcoinToolsFactory(btcd, async=ASYNC)
 if __name__ == '__main__':
     start_height = 1
     increment = 5
+    storage = Storage()
     while start_height < 370000:
-        do()
+        do(storage)
         start_height += increment
